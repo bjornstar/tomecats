@@ -1,0 +1,27 @@
+{
+    "name": "tomecats",
+    "description": "I heard you like cats.",
+    "version": "0.0.1",
+    "author": "Wizcorp, Inc. <info@wizcorp.jp>",
+    "maintainers": [
+        { "name": "Bjorn Stromberg", "email": "bstromberg@wizcorp.jp" }
+    ],
+    "main": "tomecats.js",
+    "dependencies": {
+        "express": "*",
+        "socket.io": "*",
+        "tomes": "*",
+        "eventemitter2": "*"
+    },
+    "license": {
+        "type": "MIT",
+        "url": "https://github.com/bjornstar/tomecats/raw/master/LICENSE"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/bjornstar/tomecats.git"
+    },
+    "bugs" : {
+        "url" : "http://github.com/bjornstar/tomecats/issues"
+    }
+}
