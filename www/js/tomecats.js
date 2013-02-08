@@ -12,7 +12,15 @@ function draw() {
 	if (sprite && cats) {
 		for (var cat in cats) {
 			if (cats.hasOwnProperty(cat)) {
-				context.drawImage(sprite, cats[cat].x - Math.round(sprite.width / 2), cats[cat].y - Math.round(sprite.height / 2));
+				if (cats[cat].d == 'r') {
+					context.save();
+					context.translate(canvas.width, 0);
+					context.scale(-1, 1);
+					context.drawImage(sprite, canvas.width - cats[cat].x - Math.round(sprite.width / 2), cats[cat].y - Math.round(sprite.height / 2));
+					context.restore();
+				} else {
+					context.drawImage(sprite, cats[cat].x - Math.round(sprite.width / 2), cats[cat].y - Math.round(sprite.height / 2));
+				}
 				context.font = "8pt sans-serif";
 				context.fillText(cat, cats[cat].x, cats[cat].y + Math.round(sprite.height / 2) + 12);
 			}
@@ -92,7 +100,15 @@ function handleWindowMouseMove(event) {
 	newX = Math.max(newX, 0);
 	newY = Math.max(newY, 0);
 
-	me.assign({ x: newX, y: newY });
+	var newD = me.d;
+
+	if (newX > me.x && me.d !== 'r') {
+		newD = 'r';
+	} else if (newX < me.x && me.d !== 'l') {
+		newD = 'l';
+	}
+
+	me.assign({ x: newX, y: newY, d: newD });
 }
 
 socket.on('cats', handleCats);
