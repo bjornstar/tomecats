@@ -6,7 +6,7 @@
     "maintainers": [
         { "name": "Bjorn Stromberg", "email": "bstromberg@wizcorp.jp" }
     ],
-    "engine": ">=0.8",
+    "engine": ">=0.8.0",
     "main": "tomecats.js",
     "dependencies": {
         "express": "*",
