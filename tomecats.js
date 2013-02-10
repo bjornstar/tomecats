@@ -2,7 +2,7 @@ var express = require('express');
 var io      = require('socket.io');
 var Tome    = require('tomes').Tome;
 
-var listenOn = 3000;
+var port = process.env.PORT || 3000;
 
 function log(data) {
 	console.log('[' + new Date().toISOString() + '] tomecats.' + process.pid + ': ' + data);
@@ -134,7 +134,7 @@ catsExpress.get('/images/:image', function (req, res) {
 });
 
 
-var catsServer = catsExpress.listen(listenOn);
+var catsServer = catsExpress.listen(port);
 
 var catsIO = io.listen(catsServer);
 
