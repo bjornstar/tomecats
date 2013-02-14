@@ -1,0 +1,13 @@
+{
+  "name": "tomecats",
+  "description": "I heard you like cats.",
+  "version": "0.0.6",
+  "dependencies": {
+    "component/raf": "*",
+    "bjornstar/tomes": "*"
+  },
+  "scripts": [
+    "client/tomecats.js"
+  ],
+  "main": "client/tomecats.js"
+}

@@ -1,4 +1,8 @@
+var raf = require('raf');
+var Tome = require('tomes').Tome;
+
 var socket = io.connect();
+
 var cats, me, canvas, context, sprite, lastCats, dragging, merging;
 
 function resizeCanvas() {
@@ -35,15 +39,20 @@ function draw() {
 }
 
 function animate() {
-	window.requestAnimationFrame(animate);
+	raf(animate);
 	if (cats && lastCats !== cats.__version__) {
 		draw();
 		lastCats = cats.__version__;
 	}
 }
 
+function handleMeDestroy() {
+	me = undefined;
+}
+
 function handleMeReadable() {
 	if (merging) {
+		console.log('merging.');
 		return;
 	}
 
@@ -67,10 +76,11 @@ function handleBadName() {
 	badname.textContent = 'Invalid name, please try a different one.';
 }
 
-function handleFirstNameSet(name) {
+function handleNameSet(name) {
 	console.log('Name set to', name);
 	me = cats[name];
 	me.on('readable', handleMeReadable);
+	me.on('destroy', handleMeDestroy);
 }
 
 function handleCats(data) {
@@ -99,7 +109,7 @@ function handleCanvasMouseDown(event) {
 	}
 }
 
-function handleWindowMouseUp(event) {
+function handleWindowMouseUp() {
 	dragging = false;
 }
 
@@ -134,7 +144,7 @@ socket.on('cats', handleCats);
 socket.on('diff', handleDiff);
 
 socket.on('badname', handleBadName);
-socket.once('nameSet', handleFirstNameSet);
+socket.on('nameSet', handleNameSet);
 
 socket.on('connect', function () {
 	console.log('connected.');
