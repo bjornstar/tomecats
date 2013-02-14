@@ -1,5 +1,5 @@
 var socket = io.connect();
-var cats, me, canvas, context, sprite, lastCats, dragging;
+var cats, me, canvas, context, sprite, lastCats, dragging, merging;
 
 function resizeCanvas() {
 	canvas.width = window.innerWidth;
@@ -10,19 +10,25 @@ function resizeCanvas() {
 function draw() {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 	if (sprite && cats) {
-		for (var cat in cats) {
-			if (cats.hasOwnProperty(cat)) {
-				if (cats[cat].d == 'r') {
+		for (var name in cats) {
+			if (cats.hasOwnProperty(name)) {
+				var cat = cats[name].c;
+
+				var hW = Math.round(sprite.width / 2);
+				var hH = Math.round(sprite.height / 2);
+				
+				if (cat.d == 'r') {
 					context.save();
 					context.translate(canvas.width, 0);
 					context.scale(-1, 1);
-					context.drawImage(sprite, canvas.width - cats[cat].x - Math.round(sprite.width / 2), cats[cat].y - Math.round(sprite.height / 2));
+					context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
 					context.restore();
 				} else {
-					context.drawImage(sprite, cats[cat].x - Math.round(sprite.width / 2), cats[cat].y - Math.round(sprite.height / 2));
+					context.drawImage(sprite, cat.x - hW, cat.y - hH);
 				}
+
 				context.font = "8pt sans-serif";
-				context.fillText(cat, cats[cat].x, cats[cat].y + Math.round(sprite.height / 2) + 12);
+				context.fillText(name, cat.x, cat.y + hH + 12);
 			}
 		}
 	}
@@ -37,6 +43,10 @@ function animate() {
 }
 
 function handleMeReadable() {
+	if (merging) {
+		return;
+	}
+
 	var diff = me.read();
 
 	if (diff) {
@@ -45,8 +55,10 @@ function handleMeReadable() {
 }
 
 function handleDiff(diff) {
+	merging = true;
 	cats.merge(diff);
 	cats.read();
+	merging = false;
 }
 
 function handleBadName() {
@@ -71,13 +83,18 @@ function handleCanvasMouseDown(event) {
 		return;
 	}
 
+	var cat = me.c;
+
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
 
-	if (eX > me.x - sprite.width / 2 &&
-		eX < me.x + sprite.width / 2 &&
-		eY > me.y - sprite.height / 2 &&
-		eY < me.y + sprite.height / 2) {
+	var hW = Math.round(sprite.width / 2);
+	var hH = Math.round(sprite.height / 2);
+
+	if (eX > cat.x - hW &&
+		eX < cat.x + hW / 2 &&
+		eY > cat.y - hH / 2 &&
+		eY < cat.y + hH / 2) {
 		dragging = true;
 	}
 }
@@ -91,6 +108,8 @@ function handleWindowMouseMove(event) {
 		return;
 	}
 
+	var cat = me.c;
+
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
 
@@ -100,15 +119,15 @@ function handleWindowMouseMove(event) {
 	newX = Math.max(newX, 0);
 	newY = Math.max(newY, 0);
 
-	var newD = me.d;
+	var newD = cat.d;
 
-	if (newX > me.x && me.d !== 'r') {
+	if (newX > cat.x && cat.d !== 'r') {
 		newD = 'r';
-	} else if (newX < me.x && me.d !== 'l') {
+	} else if (newX < cat.x && cat.d !== 'l') {
 		newD = 'l';
 	}
 
-	me.assign({ x: newX, y: newY, d: newD });
+	cat.assign({ x: newX, y: newY, d: newD });
 }
 
 socket.on('cats', handleCats);

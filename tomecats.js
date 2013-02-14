@@ -2,7 +2,10 @@ var express = require('express');
 var io      = require('socket.io');
 var Tome    = require('tomes').Tome;
 
-var port = process.env.PORT || 3000;
+// Heroku uses PORT
+// AppFog uses VCAP_APP_PORT
+
+var port = process.env.PORT || process.env.VCAP_APP_PORT || 3000;
 
 function log(data) {
 	console.log('[' + new Date().toISOString() + '] tomecats.' + process.pid + ': ' + data);
@@ -37,13 +40,14 @@ function handleCatsReadable() {
 	if (merging) {
 		return;
 	}
+
 	var diff = this.read();
-	while (diff) {
+
+	if (diff) {
 		for (var id in catMap) {
 			log('Client ' + id + ' getting '+ JSON.stringify(diff));
 			catMap[id].socket.emit('diff', diff);
 		}
-		diff = this.read();
 	}
 }
 
@@ -81,7 +85,7 @@ function handleSetName(name) {
 			return this.emit('badname');
 		}
 
-		cats.set(name, { x: rnd(500) + 10, y: rnd(400) + 50 });
+		cats.set(name, { c: { x: rnd(500) + 10, y: rnd(400) + 50, d: 'r' } });
 	}
 	
 	catMap[this.id].name = name;
@@ -133,8 +137,30 @@ catsExpress.get('/images/:image', function (req, res) {
 	res.sendfile('./www/images/' + image);
 });
 
+function isNumber (o) {
+	if (parseInt(o, 10) == o) {
+		return true;
+	}
+	return false;
+}
 
-var catsServer = catsExpress.listen(port);
+function handleSigInt() {
+	catsServer.close();
+}
+
+function handleUncaughtException(err) {
+	handleSigInt();
+	console.log(err);
+	process.exit();
+}
+
+var catsServer = catsExpress.listen(port, function () {
+	if (!isNumber(port)) {
+		require('fs').chmod(port, parseInt('777', 8));
+	}
+	process.on('SIGINT', handleSigInt);
+	process.on('uncaughtException', handleUncaughtException);
+});
 
 var catsIO = io.listen(catsServer);
 
