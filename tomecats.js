@@ -1,6 +1,7 @@
 var express = require('express');
 var io      = require('socket.io');
 var Tome    = require('tomes').Tome;
+var build   = require('./build');
 
 // Heroku uses PORT
 // AppFog uses VCAP_APP_PORT
@@ -28,6 +29,10 @@ function handleSocketDisconnect() {
 
 function handleCatDiff(diff) {
 	log('Client ' + this.id + ' sent a diff:' + JSON.stringify(diff));
+
+	if (!catMap[this.id].name) {
+		return; // has no cat.
+	}
 
 	merging = true;
 	cats.merge(diff);
@@ -85,7 +90,10 @@ function handleSetName(name) {
 			return this.emit('badname');
 		}
 
-		cats.set(name, { c: { x: rnd(500) + 10, y: rnd(400) + 50, d: 'r' } });
+		var rndX = rnd(500) + 10;
+		var rndY = rnd(400) + 50;
+
+		cats.set(name, { t: { x: rndX, y: rndY, d: 'l' } });
 	}
 	
 	catMap[this.id].name = name;
@@ -104,39 +112,6 @@ function handleSocketsConnection(socket) {
 	socket.on('setName', handleSetName);
 }
 
-var catsExpress = express();
-
-catsExpress.get('/', function (req, res) {
-	res.sendfile('./www/index.html');
-});
-
-catsExpress.get('/tomes.js', function (req, res) {
-	res.sendfile('./node_modules/tomes/tomes.js');
-});
-
-catsExpress.get('/eventEmitter.js', function (req, res) {
-	res.sendfile('./node_modules/eventemitter2/lib/eventemitter2.js');
-});
-
-catsExpress.get('/favicon.ico', function (req, res) {
-	res.send(404);
-});
-
-catsExpress.get('/js/:js', function (req, res) {
-	var js = req.params.js;
-	res.sendfile('./www/js/' + js);
-});
-
-catsExpress.get('/css/:css', function (req, res) {
-	var css = req.params.css;
-	res.sendfile('./www/css/' + css);
-});
-
-catsExpress.get('/images/:image', function (req, res) {
-	var image = req.params.image;
-	res.sendfile('./www/images/' + image);
-});
-
 function isNumber (o) {
 	if (parseInt(o, 10) == o) {
 		return true;
@@ -150,16 +125,39 @@ function handleSigInt() {
 
 function handleUncaughtException(err) {
 	handleSigInt();
-	console.log(err);
+	log(err);
 	process.exit();
 }
+
+var catsExpress = express();
+
+catsExpress.use(express.favicon());
+catsExpress.use(express.logger('dev'));
+
+catsExpress.get('/', build, function (req, res) {
+	res.sendfile('./client/index.html');
+});
+
+catsExpress.get('/tomecats.js', function (req, res) {
+	res.sendfile('./public/tomecats.js');
+});
+
+catsExpress.get('/css/:css', function (req, res) {
+	var css = req.params.css;
+	res.sendfile('./client/css/' + css);
+});
+
+catsExpress.get('/images/:image', function (req, res) {
+	var image = req.params.image;
+	res.sendfile('./client/images/' + image);
+});
 
 var catsServer = catsExpress.listen(port, function () {
 	if (!isNumber(port)) {
 		require('fs').chmod(port, parseInt('777', 8));
+		process.on('SIGINT', handleSigInt);
+		process.on('uncaughtException', handleUncaughtException);
 	}
-	process.on('SIGINT', handleSigInt);
-	process.on('uncaughtException', handleUncaughtException);
 });
 
 var catsIO = io.listen(catsServer);

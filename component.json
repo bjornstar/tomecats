@@ -4,7 +4,8 @@
   "version": "0.0.6",
   "dependencies": {
     "component/raf": "*",
-    "bjornstar/tomes": "*"
+    "bjornstar/tomes": "*",
+    "component/tween": "*"
   },
   "scripts": [
     "client/tomecats.js"
