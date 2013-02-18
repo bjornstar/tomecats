@@ -7,18 +7,17 @@ var socket = io.connect();
 var map = { height: 2000, width: 2000 };
 var halfCanvasW = 0;
 var halfCanvasH = 0;
-var speed = 100;
-var updateRate = 30;
+var chatSize = 100;
 
-var sCats, me, canvas, context, sprite, lastCats, dragging, merging;
+var sCats, me, canvas, context, sprite, prop, lastCats, dragging, merging, chatStarted;
 var cCats = Tome.conjure({});
 var tweens = {};
+var chatTweens = {};
 var scroll = { x: halfCanvasW, y: halfCanvasH };
-var lastUpdate = new Date().getTime();
 
 function resizeCanvas() {
 	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight - 100;
+	canvas.height = window.innerHeight - chatSize;
 	halfCanvasW = Math.round(canvas.width / 2);
 	halfCanvasH = Math.round(canvas.height / 2);
 	draw();
@@ -28,10 +27,6 @@ function draw() {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
 	if (sprite && cCats) {
-
-		var hW = Math.round(sprite.width / 2);
-		var hH = Math.round(sprite.height / 2);
-
 		context.save();
 		context.translate(-scroll.x, -scroll.y);
 		context.strokeRect(0, 0, map.width, map.height);
@@ -40,7 +35,8 @@ function draw() {
 		var names = Object.keys(cCats);
 		for (var i = 0, len = names.length; i < len; i += 1) {
 			var name = names[i];
-			var cat = cCats[name].c;
+			var cat = cCats[name].t;
+			var chat = cCats[name].c;
 
 			context.save();
 
@@ -53,13 +49,13 @@ function draw() {
 			context.font = "8pt sans-serif";
 			context.fillText(name, 0, sprite.height + 12);
 
-/*			if (cat.d == 'r') {
-				context.translate(canvas.width, 0);
-				context.scale(-1, 1);
-				context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
-			} else {*/
-				context.drawImage(sprite, 0, 0);
-//			}
+			context.drawImage(sprite, 0, 0);
+			context.drawImage(prop, 0, 0);
+
+			if (chat && chat.length) {
+				context.font = "10pt sans-serif";
+				context.fillText(chat[chat.length-1], 0, -12);
+			}
 
 			context.restore();
 		}
@@ -71,8 +67,15 @@ function update() {
 		scroll.tween.update();
 	}
 
-	for (var name in tweens) {
-		var tween = tweens[name];
+	var name, tween;
+
+	for (name in tweens) {
+		tween = tweens[name];
+		tween.update();
+	}
+
+	for (name in chatTweens) {
+		tween = chatTweens[name];
 		tween.update();
 	}
 }
@@ -120,10 +123,36 @@ function handleDiff(diff) {
 	merging = false;
 }
 
+function handleChatInput(e) {
+	if (e.keyCode === 13) {
+		me.c.push(e.srcElement.value);
+		e.srcElement.value = '';
+		e.preventDefault();
+		e.stopPropagation();
+	}
+}
+
+function setupChatHooks() {
+	if (chatStarted) {
+		return;
+	}
+
+	var chatinput = document.getElementById('chatin');
+	chatinput.addEventListener('keydown', handleChatInput);
+
+	chatStarted = true;
+
+	chatinput.focus();
+}
+
 function handleBadName() {
 	console.log('bad name.');
 	var badname = document.getElementById('badname');
 	badname.textContent = 'Invalid name, please try a different one.';
+	var welcome = document.getElementById('Welcome');
+	var blocker = document.getElementById('blocker');
+	welcome.style.display = '';
+	blocker.style.display = '';
 }
 
 function handleNameSet(name) {
@@ -141,6 +170,8 @@ function handleNameSet(name) {
 
 	var blocker = document.getElementById('blocker');
 	blocker.style.display = 'none';
+
+	setupChatHooks();
 }
 
 function scrollUpdate(o) {
@@ -150,12 +181,12 @@ function scrollUpdate(o) {
 
 function catUpdate(o) {
 	var name = this.name;
-	var cat = cCats[name].c;
+	var cat = cCats[name].t;
 
 	var newX = o.hasOwnProperty('x') ? Math.round(o.x) : cat.x;
 	var newY = o.hasOwnProperty('y') ? Math.round(o.y) : cat.y;
 	var newO = o.hasOwnProperty('o') ? o.o : cat.o;
-	var newD = cat.d.valueOf();
+	var newD = cat.d;
 
 	if (newX > cat.x) {
 		newD = 'r';
@@ -170,21 +201,14 @@ function catUpdate(o) {
 	cat.assign({ x: newX, y: newY, d: newD, o: newO });
 }
 
-function calculateDistance(oX, oY, nX, nY) {
-	return Math.round(Math.abs(oX - nX) + Math.abs(oY - nY));
-}
-
 function handleCatMove() {
-	var name = this.getKey();
+	var name = this.getParent().getKey();
 	
-	var oldT = cCats[name].c;
-	var newT = this.t;
+	var oldT = cCats[name].t;
+	var newT = this;
 
-	var distance = calculateDistance(oldT.x, oldT.y, newT.x, newT.y);
-	var duration = Math.round(distance * 100 / speed);
-
-	var tween = Tween({ x: oldT.x.valueOf(), y: oldT.y.valueOf() })
-		.to({ x: newT.x.valueOf(), y: newT.y.valueOf() })
+	var tween = Tween({ x: oldT.x, y: oldT.y })
+		.to({ x: newT.x, y: newT.y })
 		.duration(500)
 		.ease('in-out-sine')
 		.update(catUpdate);
@@ -192,12 +216,22 @@ function handleCatMove() {
 	tweens[name] = tween;
 }
 
+function handleChatAdd(index) {
+	var name = this.getParent().getKey();
+	cCats[name].c.push(this[index]);
+}
+
+function handleChatDel(index) {
+	var name = this.getParent().getKey();
+	cCats[name].c.shift();
+}
+
 function handleAddCat(name) {
 	console.log('cat added:', name);
 	var cat = sCats[name];
 	console.log(cat);
-	var c = { x: cat.t.x.valueOf(), y: cat.t.y.valueOf(), d: cat.t.d.valueOf(), o: 0 };
-	cCats.set(name, { c: c });
+	var t = { x: cat.t.x.valueOf(), y: cat.t.y.valueOf(), d: cat.t.d.valueOf(), o: 0 };
+	cCats.set(name, { t: t, c: [] });
 	var tween = Tween({ o: 0 })
 		.to({ o: 1 })
 		.duration(300)
@@ -205,7 +239,9 @@ function handleAddCat(name) {
 		.update(catUpdate);
 	tween.name = name;
 	tweens[name] = tween;
-	cat.on('readable', handleCatMove);
+	cat.t.on('readable', handleCatMove);
+	cat.c.on('add', handleChatAdd);
+	cat.c.on('del', handleChatDel);
 }
 
 function handleDelCat(name) {
@@ -238,7 +274,7 @@ function handleCats(data) {
 	sCats.on('del', handleDelCat);
 }
 
-function handleCanvasMouseDown(event) {
+function handleWindowMouseDown(event) {
 	if (!me) {
 		return;
 	}
@@ -247,7 +283,7 @@ function handleCanvasMouseDown(event) {
 		return;
 	}
 
-	var cat = cCats[me.getKey()].c;
+	var cat = cCats[me.getKey()].t;
 
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
@@ -272,7 +308,7 @@ function handleWindowMouseMove(event) {
 		return;
 	}
 
-	var cat = cCats[me.getKey()].c;
+	var cat = cCats[me.getKey()].t;
 
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
@@ -296,13 +332,6 @@ function handleWindowMouseMove(event) {
 	}
 
 	cat.assign({ x: newX, y: newY, d: newD });
-
-	var now = new Date().getTime();
-
-	if (now - lastUpdate > updateRate) {
-		lastUpdate = now;
-		me.t.assign({ x: newX, y: newY, d: newD });
-	}
 }
 
 function handleWindowMouseUp(event) {
@@ -366,13 +395,11 @@ socket.on('connect', function () {
 	console.log('connected.');
 });
 
-function setName() {
-	var name = document.getElementById('name');
-
+function setName(name) {
 	var badname = document.getElementById('badname');
 	badname.textContent = '';
 
-	socket.emit('setName', name.value);
+	socket.emit('setName', name);
 }
 
 function contentLoaded() {
@@ -381,14 +408,15 @@ function contentLoaded() {
 
 	name.addEventListener('keydown', function (e) {
 		if (e.keyCode === 13) {
-			setName();
+			setName(e.srcElement.value);
 		}
 	});
 
 	var setNameButton = document.getElementById('setName');
 
 	setNameButton.addEventListener('click', function (e) {
-		setName();
+		var name = document.getElementById('name');
+		setName(name.value);
 
 		e.preventDefault();
 		e.stopPropagation();
@@ -397,7 +425,7 @@ function contentLoaded() {
 	canvas = document.getElementById('canvas');
 	context = canvas.getContext('2d');
 
-	canvas.addEventListener('mousedown', handleCanvasMouseDown);
+	window.addEventListener('mousedown', handleWindowMouseDown);
 	window.addEventListener('mouseup', handleWindowMouseUp);
 	window.addEventListener('mousemove', handleWindowMouseMove);
 
@@ -405,7 +433,10 @@ function contentLoaded() {
 	resizeCanvas();
 
 	sprite = new Image();
-	sprite.src = '/images/cat.png';
+	sprite.src = '/images/c10.png';
+
+	prop = new Image();
+	prop.src = '/images/a1.png';
 
 	animate();
 }

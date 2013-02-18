@@ -45,3 +45,8 @@ a {
   display: block;
   z-index: 1;
 }
+#chat {
+  border: solid 1px #000;
+  height: 98px;
+  display: block;
+}

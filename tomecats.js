@@ -93,7 +93,15 @@ function handleSetName(name) {
 		var rndX = rnd(500) + 10;
 		var rndY = rnd(400) + 50;
 
-		cats.set(name, { t: { x: rndX, y: rndY, d: 'l' } });
+		var now = new Date().getTime();
+
+		cats.set(name, { t: { x: rndX, y: rndY, d: 'l' }, c: [] });
+		cats[name].c.on('add', function () {
+			var that = this;
+			setTimeout(function () {
+				that.shift();
+			}, 3000);
+		});
 	}
 	
 	catMap[this.id].name = name;

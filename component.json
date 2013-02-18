@@ -5,7 +5,8 @@
   "dependencies": {
     "component/raf": "*",
     "bjornstar/tomes": "*",
-    "component/tween": "*"
+    "component/tween": "*",
+    "component/history": "*"
   },
   "scripts": [
     "client/tomecats.js"
