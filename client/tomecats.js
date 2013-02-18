@@ -333,6 +333,7 @@ function handleWindowMouseUp(event) {
 	var eY = event.offsetY || event.clientY;
 
 	// get mouse pos relative to scroll offset
+	// TODO: scroll x,y must be force-updated when we click during the scroll tweener...
 	eX += scroll.x;
 	eY += scroll.y;
 
