@@ -135,6 +135,12 @@ function handleNameSet(name) {
 
 	me.on('readable', handleMeReadable);
 	me.on('destroy', handleMeDestroy);
+
+	var welcome = document.getElementById('Welcome');
+	welcome.style.display = 'none';
+
+	var blocker = document.getElementById('blocker');
+	blocker.style.display = 'none';
 }
 
 function scrollUpdate(o) {
@@ -360,19 +366,29 @@ socket.on('connect', function () {
 	console.log('connected.');
 });
 
+function setName() {
+	var name = document.getElementById('name');
+
+	var badname = document.getElementById('badname');
+	badname.textContent = '';
+
+	socket.emit('setName', name.value);
+}
+
 function contentLoaded() {
 	var name = document.getElementById('name');
 	name.focus();
 
+	name.addEventListener('keydown', function (e) {
+		if (e.keyCode === 13) {
+			setName();
+		}
+	});
+
 	var setNameButton = document.getElementById('setName');
 
 	setNameButton.addEventListener('click', function (e) {
-		var name = document.getElementById('name');
-
-		var badname = document.getElementById('badname');
-		badname.textContent = '';
-	
-		socket.emit('setName', name.value);
+		setName();
 
 		e.preventDefault();
 		e.stopPropagation();
