@@ -8,7 +8,9 @@ module.exports = function(req, res, next) {
 	builder.copyAssetsTo('public');
 	builder.build(function (err, res) {
 		if (err) return next(err);
-		mkdir('public');
+		if (!fs.existsSync('public')) {
+			mkdir('public');
+		}
 		write('public/tomecats.js', res.require + res.js);
 		next();
 	});
