@@ -50,3 +50,32 @@ a {
   height: 98px;
   display: block;
 }
+#playground {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: block;
+  background-color: #ffe;
+}
+
+.cat {
+  position: fixed;
+  width: 100px;
+  height: 91px;
+  display: block;
+}
+
+.c1 {
+  background-image: url('/images/c1.png');
+}
+
+.c2 {
+  background-image: url('/images/c2.png');
+}
+
+.c3 {
+  background-image: url('/images/c3.png');
+}

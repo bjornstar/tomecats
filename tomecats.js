@@ -95,7 +95,7 @@ function handleSetName(name) {
 
 		var now = new Date().getTime();
 
-		cats.set(name, { t: { x: rndX, y: rndY, d: 'l' }, c: [] });
+		cats.set(name, { t: { x: rndX, y: rndY, d: 'l', s: 'c1' }, c: [] });
 		cats[name].c.on('add', function () {
 			var that = this;
 			setTimeout(function () {
