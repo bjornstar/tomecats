@@ -5,15 +5,15 @@ var Tween = require('tween');
 var socket = io.connect();
 
 var map = { height: 2000, width: 2000 };
-var scrollX = 0;
-var scrollY = 0;
-var halfCanvasW, halfCanvasH;
+var halfCanvasW = 0;
+var halfCanvasH = 0;
 var speed = 100;
 var updateRate = 30;
 
 var sCats, me, canvas, context, sprite, lastCats, dragging, merging;
 var cCats = Tome.conjure({});
 var tweens = {};
+var scroll = { x: halfCanvasW, y: halfCanvasH };
 var lastUpdate = new Date().getTime();
 
 function resizeCanvas() {
@@ -26,30 +26,39 @@ function resizeCanvas() {
 
 function draw() {
 	context.clearRect(0, 0, canvas.width, canvas.height);
+
 	if (sprite && cCats) {
+
+		var hW = Math.round(sprite.width / 2);
+		var hH = Math.round(sprite.height / 2);
+
+		context.save();
+		context.translate(-scroll.x, -scroll.y);
+		context.strokeRect(0, 0, map.width, map.height);
+		context.restore();
+
 		var names = Object.keys(cCats);
 		for (var i = 0, len = names.length; i < len; i += 1) {
 			var name = names[i];
 			var cat = cCats[name].c;
 
-			var hW = Math.round(sprite.width / 2);
-			var hH = Math.round(sprite.height / 2);
-
 			context.save();
+
+			context.translate(cat.x - scroll.x, cat.y - scroll.y);
 
 			if (cat.o < 1) {
 				context.globalAlpha = cat.o;
 			}
 
 			context.font = "8pt sans-serif";
-			context.fillText(name, cat.x - scrollX, cat.y + hH + 12 - scrollY);
+			context.fillText(name, 0, sprite.height + 12);
 
 /*			if (cat.d == 'r') {
 				context.translate(canvas.width, 0);
 				context.scale(-1, 1);
 				context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
 			} else {*/
-				context.drawImage(sprite, cat.x - hW - scrollX, cat.y - hH - scrollY);
+				context.drawImage(sprite, 0, 0);
 //			}
 
 			context.restore();
@@ -58,6 +67,10 @@ function draw() {
 }
 
 function update() {
+	if (scroll.tween) {
+		scroll.tween.update();
+	}
+
 	for (var name in tweens) {
 		var tween = tweens[name];
 		tween.update();
@@ -116,21 +129,25 @@ function handleBadName() {
 function handleNameSet(name) {
 	console.log('Name set to', name);
 	me = sCats[name];
-	console.log(halfCanvasW, me.t.x.valueOf());
 
-	scrollX = me.t.x - halfCanvasW;
-	scrollY = me.t.y - halfCanvasH;
+	scroll.x = 0;
+	scroll.y = 0;
 
 	me.on('readable', handleMeReadable);
 	me.on('destroy', handleMeDestroy);
+}
+
+function scrollUpdate(o) {
+	scroll.x = o.x;
+	scroll.y = o.y;
 }
 
 function catUpdate(o) {
 	var name = this.name;
 	var cat = cCats[name].c;
 
-	var newX = o.hasOwnProperty('x') ? o.x : cat.x;
-	var newY = o.hasOwnProperty('y') ? o.y : cat.y;
+	var newX = o.hasOwnProperty('x') ? Math.round(o.x) : cat.x;
+	var newY = o.hasOwnProperty('y') ? Math.round(o.y) : cat.y;
 	var newO = o.hasOwnProperty('o') ? o.o : cat.o;
 	var newD = cat.d.valueOf();
 
@@ -162,7 +179,7 @@ function handleCatMove() {
 
 	var tween = Tween({ x: oldT.x.valueOf(), y: oldT.y.valueOf() })
 		.to({ x: newT.x.valueOf(), y: newT.y.valueOf() })
-		.duration(duration)
+		.duration(500)
 		.ease('in-out-sine')
 		.update(catUpdate);
 	tween.name = name;
@@ -251,17 +268,14 @@ function handleWindowMouseMove(event) {
 
 	var cat = cCats[me.getKey()].c;
 
-	var hW = Math.round(sprite.width / 2);
-	var hH = Math.round(sprite.height / 2);
-
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
 
-	var newX = Math.min(eX, canvas.width - hW);
-	var newY = Math.min(eY, canvas.height - hH - 20);
+	var newX = Math.min(eX, canvas.width);
+	var newY = Math.min(eY, canvas.height);
 
-	newX = Math.max(newX, hW);
-	newY = Math.max(newY, hH);
+	newX = Math.max(newX, 0);
+	newY = Math.max(newY, 0);
 
 	var newD = cat.d;
 
@@ -298,17 +312,14 @@ function handleWindowMouseUp(event) {
 
 	var cat = me.t;
 
-	var hW = Math.round(sprite.width / 2);
-	var hH = Math.round(sprite.height / 2);
-
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
 
-	var newX = Math.min(eX, map.width - hW);
-	var newY = Math.min(eY, map.height - hH - 20);
+	eX += scroll.x;
+	eY += scroll.y;
 
-	newX = Math.max(newX, hW);
-	newY = Math.max(newY, hH);
+	var newX = Math.max(Math.min(eX, map.width - sprite.width), 0);
+	var newY = Math.max(Math.min(eY, map.height - sprite.height), 0);
 
 	var newD = cat.d;
 
@@ -318,15 +329,23 @@ function handleWindowMouseUp(event) {
 		newD = 'l';
 	}
 
+	var tween = Tween({ x: scroll.x, y: scroll.y });
+
+	var newScrollX = Math.min(-halfCanvasW + scroll.x + newX - cat.x, map.width);
+	var newScrollY = Math.min(-halfCanvasH + scroll.y + newY - cat.y, map.height);
+
+	newScrollX = Math.max(newScrollX, 0);
+	newScrollY = Math.max(newScrollY, 0);
+
+	tween.to({ x: newScrollX, y: newScrollY })
+		.ease('in-out-sine')
+		.update(scrollUpdate);
+
+	scroll.tween = tween;
+
 	if (cat.x == newX && cat.y == newY && cat.d == newD) {
 		return;
 	}
-
-	var tween = Tween({ x: scrollX, y: scrollY });
-	
-
-	scrollX += newX - cat.x;
-	scrollY += newY - cat.y;
 
 	cat.assign({ x: newX, y: newY, d: newD });
 }
