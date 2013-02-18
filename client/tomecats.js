@@ -4,7 +4,7 @@ var Tween = require('tween');
 
 var socket = io.connect();
 
-var map = { height: 2000, width: 2000 };
+var map = { width: 1000, height: 1000 };
 var halfCanvasW = 0;
 var halfCanvasH = 0;
 var speed = 100;
@@ -13,7 +13,7 @@ var updateRate = 30;
 var sCats, me, canvas, context, sprite, lastCats, dragging, merging;
 var cCats = Tome.conjure({});
 var tweens = {};
-var scroll = { x: halfCanvasW, y: halfCanvasH };
+var scroll = { x: 0, y: 0 };
 var lastUpdate = new Date().getTime();
 
 function resizeCanvas() {
@@ -32,9 +32,10 @@ function draw() {
 		var hW = Math.round(sprite.width / 2);
 		var hH = Math.round(sprite.height / 2);
 
+		// draw map walls
 		context.save();
-		context.translate(-scroll.x, -scroll.y);
-		context.strokeRect(0, 0, map.width, map.height);
+		context.lineWidth = 10;
+		context.strokeRect(-scroll.x, -scroll.y, map.width, map.height);
 		context.restore();
 
 		var names = Object.keys(cCats);
@@ -44,22 +45,33 @@ function draw() {
 
 			context.save();
 
-			context.translate(cat.x - scroll.x, cat.y - scroll.y);
-
+			// set cat alpha
 			if (cat.o < 1) {
 				context.globalAlpha = cat.o;
 			}
 
-			context.font = "8pt sans-serif";
-			context.fillText(name, 0, sprite.height + 12);
-
-/*			if (cat.d == 'r') {
+			// set cat flip
+			/*if (cat.d == 'l') {
 				context.translate(canvas.width, 0);
 				context.scale(-1, 1);
-				context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
-			} else {*/
-				context.drawImage(sprite, 0, 0);
-//			}
+			}*/
+			/*if (cat.d == 'r') {
+			 context.translate(canvas.width, 0);
+			 context.scale(-1, 1);
+			 context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
+			 } else {
+			 context.drawImage(sprite, 0, 0);
+			 }*/
+
+			// draw cat
+			var x = -scroll.x + cat.x - sprite.width / 2;
+			var y = -scroll.y + cat.y - sprite.height / 2;
+			context.drawImage(sprite, x, y);
+
+			// draw cat name
+			context.font = " bold 8pt sans-serif";
+			context.textAlign = 'center';
+			context.fillText(name, x + sprite.height / 2, y + sprite.height + 12);
 
 			context.restore();
 		}
@@ -75,6 +87,7 @@ function update() {
 		var tween = tweens[name];
 		tween.update();
 	}
+
 }
 
 function animate() {
@@ -130,8 +143,11 @@ function handleNameSet(name) {
 	console.log('Name set to', name);
 	me = sCats[name];
 
-	scroll.x = 0;
-	scroll.y = 0;
+	// set initial scroll relative to your cat position
+
+	var cat = me.t;
+	scroll.x = cat.x - halfCanvasW;
+	scroll.y = cat.y - halfCanvasH;
 
 	me.on('readable', handleMeReadable);
 	me.on('destroy', handleMeDestroy);
@@ -170,18 +186,13 @@ function catUpdate(o) {
 	cat.assign({ x: newX, y: newY, d: newD, o: newO });
 }
 
-function calculateDistance(oX, oY, nX, nY) {
-	return Math.round(Math.abs(oX - nX) + Math.abs(oY - nY));
-}
+
 
 function handleCatMove() {
 	var name = this.getKey();
 	
 	var oldT = cCats[name].c;
 	var newT = this.t;
-
-	var distance = calculateDistance(oldT.x, oldT.y, newT.x, newT.y);
-	var duration = Math.round(distance * 100 / speed);
 
 	var tween = Tween({ x: oldT.x.valueOf(), y: oldT.y.valueOf() })
 		.to({ x: newT.x.valueOf(), y: newT.y.valueOf() })
@@ -314,7 +325,50 @@ function handleWindowMouseUp(event) {
 		return;
 	}
 
-	dragging = false;
+	// get cat
+	var cat = me.t;
+
+	// get mouse position in canvas
+	var eX = event.offsetX || event.clientX;
+	var eY = event.offsetY || event.clientY;
+
+	// get mouse pos relative to scroll offset
+	// TODO: scroll x,y must be force-updated when we click during the scroll tweener...
+	eX += scroll.x;
+	eY += scroll.y;
+
+	// calculate limits
+	if(eX <  sprite.width / 2) { eX = sprite.width / 2; }
+	if(eY <  sprite.height / 2) { eY = sprite.height / 2; }
+	if(eX > map.width - sprite.width / 2) { eX = map.width - sprite.width / 2; }
+	if(eY > map.height - sprite.height / 2) { eY = map.height - sprite.height / 2 }
+
+
+	// record last cat position and update it
+	var lastX = cat.x, lastY = cat.y;
+	cat.assign({ x: eX, y: eY, d: 'l' });
+
+	// calculate movement vector
+	var dx = cat.x - lastX;
+	var dy = cat.y - lastY;
+
+	// add movement vector to scroll offset
+	var newScrollX = scroll.x + dx;
+	var newScrollY = scroll.y + dy;
+
+	// tween scroll to new cords
+	var tween = Tween({ x: scroll.x, y: scroll.y });
+	tween.to({ x: newScrollX, y: newScrollY })
+		.ease('in-out-sine')
+		.update(scrollUpdate);
+	scroll.tween = tween;
+
+
+	// ---------------------
+	// Old Code
+	// ---------------------
+
+	/*dragging = false;
 
 	var cat = me.t;
 
@@ -353,7 +407,7 @@ function handleWindowMouseUp(event) {
 		return;
 	}
 
-	cat.assign({ x: newX, y: newY, d: newD });
+	cat.assign({ x: newX, y: newY, d: newD });*/
 }
 
 socket.on('cats', handleCats);
