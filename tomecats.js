@@ -1,3 +1,31 @@
+// Copyright (C) 2013 Wizcorp, Inc. <info@wizcorp.jp>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+//  _____                       ___      _
+// /__   \___  _ __ ___   ___  / __\__ _| |_ ___
+//   / /\/ _ \| '_ ` _ \ / _ \/ /  / _` | __/ __|
+//  / / | (_) | | | | | |  __/ /__| (_| | |_\__ \
+//  \/   \___/|_| |_| |_|\___\____/\__,_|\__|___/
+//
+
 var express = require('express');
 var io      = require('socket.io');
 var Tome    = require('tomes').Tome;
@@ -7,15 +35,32 @@ var build   = require('./build');
 // AppFog uses VCAP_APP_PORT
 
 var port = process.env.PORT || process.env.VCAP_APP_PORT || 3000;
-var map = { x: 2000, y: 2000 };
+var map = { x: 2000, y: 500 };
+var chatDuration = 3000;
+
+var game = Tome.conjure({ map: map, cats: {} });
+var catMap = {};
+var merging;
 
 function log(data) {
 	console.log('[' + new Date().toISOString() + '] tomecats.' + process.pid + ': ' + data);
 }
 
-var game = Tome.conjure({ map: map, cats: {} });
-var catMap = {};
-var merging;
+function nameIsOk(name) {
+	if (game.cats.hasOwnProperty(name)) {
+		return false;
+	}
+
+	if (name.trim() === '') {
+		return false;
+	}
+
+	return true;
+}
+
+function rnd(n) {
+	return Math.round(Math.random() * n);
+}
 
 function handleSocketDisconnect() {
 	log(this.id + ' disconnected.');
@@ -59,20 +104,11 @@ function handleCatsReadable() {
 
 game.cats.on('readable', handleCatsReadable);
 
-function nameIsOk(name) {
-	if (game.cats.hasOwnProperty(name)) {
-		return false;
-	}
-
-	if (name.trim() === '') {
-		return false;
-	}
-
-	return true;
-}
-
-function rnd(n) {
-	return Math.round(Math.random() * n);
+function setChatExpire() {
+	var that = this;
+	setTimeout(function () {
+		that.shift();
+	}, chatDuration);
 }
 
 function handleSetName(name) {
@@ -94,15 +130,8 @@ function handleSetName(name) {
 		var rndX = rnd(500) + 50;
 		var rndY = rnd(400) + 50;
 
-		var now = new Date().getTime();
-
 		game.cats.set(name, { t: { x: rndX, y: rndY, d: 'l', s: 'c1' }, c: [] });
-		game.cats[name].c.on('add', function () {
-			var that = this;
-			setTimeout(function () {
-				that.shift();
-			}, 3000);
-		});
+		game.cats[name].c.on('add', setChatExpire);
 	}
 	
 	catMap[this.id].name = name;
