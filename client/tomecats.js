@@ -4,17 +4,16 @@ var Tween = require('tween');
 
 var socket = io.connect();
 
-var map = { width: 2000, height: 400 };
+var map = { width: 2000, height: 500 };
 var halfCanvasW = 0;
 var halfCanvasH = 0;
 var chatSize = 100;
 
-var sCats, me, canvas, context, sprite, prop, lastCats, dragging, merging, chatStarted, gameData;
+var sCats, me, sMe, cMe, canvas, context, sprite, prop, lastCats, dragging, merging, chatStarted, gameData;
 var cCats = Tome.conjure({});
 var tweens = {};
 var chatTweens = {};
 var offset = { x: 0, y: 0 };
-
 var mouse = { x: 0, y: 0 };
 
 function handleWindowMouseUp(event) {
@@ -22,13 +21,9 @@ function handleWindowMouseUp(event) {
 		return;
 	}
 
-	if (!me) {
+	if (!sMe) {
 		return;
 	}
-
-	// get my coords
-	var meX = me.t.x;
-	var meY = me.t.y;
 
 	// get mouse coords
 	var eX = event.offsetX || event.clientX;
@@ -39,15 +34,23 @@ function handleWindowMouseUp(event) {
 	var dX = eX + offset.x;
 	var dY = eY + offset.y;
 
-	var newX = Math.max(Math.min(dX , map.width - sprite.width / 2), sprite.width / 2);
-	var newY = Math.max(Math.min(dY , map.height - sprite.height / 2), sprite.width / 2);
+	var newX = Math.max(Math.min(dX, map.width - sprite.width / 2), sprite.width / 2);
+	var newY = Math.max(Math.min(dY, map.height - sprite.height / 2), sprite.width / 2);
 
-	offset = calcOffset();
+	sMe.t.assign({ x: newX, y: newY, d: 'l' });
 
-	me.t.assign({ x: newX, y: newY, d: 'l' });
+	//offset = calcMouseOffset();
 }
 
-function calcOffset() {
+function updateOffset() {
+	var meX = cMe ? cMe.t.x : 0;
+	var meY = cMe ? cMe.t.y : 0;
+
+	offset.x = Math.min(Math.max(meX - halfCanvasW, 0), Math.max(map.width - canvas.width, 0));
+	offset.y = Math.min(Math.max(meY - halfCanvasH, 0), Math.max(map.height - canvas.height, 0));
+}
+
+function calcMouseOffset() {
 	var x = Math.max(Math.min(offset.x + mouse.x - halfCanvasW, map.width - canvas.width), 0);
 	var y = Math.max(Math.min(offset.y + mouse.y - halfCanvasH, map.height - canvas.height), 0);
 
@@ -61,62 +64,67 @@ function draw() {
 	context.textAlign = 'right';
 	context.fillText('mouse: ' + mouse.x + ', ' + mouse.y, canvas.width - 6, 18);
 	context.fillText('map: ' + (mouse.x + offset.x) + ', ' + (mouse.y + offset.y), canvas.width - 6, 32);
-	context.fillText('offset: ' + offset.x + ', ' + offset.y, canvas.width - 6, 46);
-	var o = calcOffset();
-	context.fillText('new: ' + o.x + ', ' + o.y, canvas.width - 6, 60);
-	if (me) {
-		context.fillText('me: ' + me.t.x + ', ' + me.t.y, canvas.width - 6, 74);
+	context.fillText('canvas: ' + canvas.width + ', ' + canvas.height, canvas.width - 6, 46);
+	context.fillText('offset: ' + offset.x + ', ' + offset.y, canvas.width - 6, 60);
+	var o = calcMouseOffset();
+	context.fillText('new: ' + o.x + ', ' + o.y, canvas.width - 6, 74);
+	if (cMe) {
+		context.fillText('cMe: ' + cMe.t.x + ', ' + cMe.t.y, canvas.width - 6, 88);
+	}
+	if (sMe) {
+		context.fillText('sMe: ' + sMe.t.x + ', ' + sMe.t.y, canvas.width - 6, 102);
 	}
 
-	if (sprite && cCats) {
-		context.lineWidth = 10;
-		context.strokeRect(0 - offset.x, 0 - offset.y, Math.max(map.width * 2 - canvas.width, map.width) - offset.x, Math.max(map.height * 2 - canvas.height, map.height) - offset.y);
+	context.lineWidth = 10;
+	context.strokeRect(0 - offset.x, 0 - offset.y, Math.max(map.width * 2 - canvas.width, map.width) - offset.x, Math.max(map.height * 2 - canvas.height, map.height) - offset.y);
 
-		var names = Object.keys(cCats);
-		for (var i = 0, len = names.length; i < len; i += 1) {
-			var name = names[i];
-			var cat = cCats[name].t;
-			var chat = cCats[name].c;
+	if (!sprite || !cCats) {
+		return;
+	}
+	var names = Object.keys(cCats);
+	for (var i = 0, len = names.length; i < len; i += 1) {
+		var name = names[i];
+		var cat = cCats[name].t;
+		var chat = cCats[name].c;
 
-			context.save();
+		context.save();
 
-			// set cat alpha
-			if (cat.o < 1) {
-				context.globalAlpha = cat.o;
-			}
-
-			// set cat flip
-			/*if (cat.d == 'l') {
-			context.translate(canvas.width, 0);
-			context.scale(-1, 1);
-			}*/
-			/*if (cat.d == 'r') {
-			context.translate(canvas.width, 0);
-			context.scale(-1, 1);
-			context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
-			} else {
-			context.drawImage(sprite, 0, 0);
-			}*/
-
-			// draw cat
-			var x = cat.x - sprite.width / 2 - offset.x;
-			var y = cat.y - sprite.height / 2 - offset.y;
-
-			context.drawImage(sprite, x, y);
-
-			// draw cat name
-			context.font = 'bold 8pt sans-serif';
-			context.textAlign = 'center';
-			context.fillText(name, x + sprite.height / 2, y + sprite.height + 12);
-
-			if (chat && chat.length) {
-				context.font = '10pt sans-serif';
-				context.textAlign = 'center';
-				context.fillText(chat[chat.length-1], x + sprite.height / 2, y - 12);
-			}
-
-			context.restore();
+		// set cat alpha
+		if (cat.o < 1) {
+			context.globalAlpha = cat.o;
 		}
+
+		// set cat flip
+		/*if (cat.d == 'l') {
+		context.translate(canvas.width, 0);
+		context.scale(-1, 1);
+		}*/
+		/*if (cat.d == 'r') {
+		context.translate(canvas.width, 0);
+		context.scale(-1, 1);
+		context.drawImage(sprite, canvas.width - cat.x - hW, cat.y - hH);
+		} else {
+		context.drawImage(sprite, 0, 0);
+		}*/
+
+		// draw cat
+		var x = cat.x - sprite.width / 2 - offset.x;
+		var y = cat.y - sprite.height / 2 - offset.y;
+
+		context.drawImage(sprite, x, y);
+
+		// draw cat name
+		context.font = 'bold 8pt sans-serif';
+		context.textAlign = 'center';
+		context.fillText(name, x + sprite.height / 2, y + sprite.height + 12);
+
+		if (chat && chat.length) {
+			context.font = '10pt sans-serif';
+			context.textAlign = 'center';
+			context.fillText(chat[chat.length-1], x + sprite.height / 2, y - 12);
+		}
+
+		context.restore();
 	}
 }
 
@@ -125,11 +133,7 @@ function resizeCanvas() {
 	canvas.height = window.innerHeight - chatSize;
 	halfCanvasW = Math.round(canvas.width / 2);
 	halfCanvasH = Math.round(canvas.height / 2);
-	if (me) {
-		var x = Math.max(me.t.x - halfCanvasW, 0);
-		var y = Math.max(me.t.y - halfCanvasH, 0)
-		offset = { x: x, y: y };
-	}
+	updateOffset();
 	draw();
 }
 
@@ -138,9 +142,7 @@ function update() {
 
 	for (name in tweens) {
 		tween = tweens[name];
-		if (!tween._done) {
-			tween.update();
-		}
+		tween.update();
 	}
 
 	for (name in chatTweens) {
@@ -161,7 +163,7 @@ function animate() {
 	var catsVersion = cCats.getVersion();
 	
 	if (lastCats === catsVersion) {
-		return;
+		//return;
 	}
 
 	draw();
@@ -169,16 +171,16 @@ function animate() {
 	lastCats = catsVersion;
 }
 
-function handleMeDestroy() {
-	me = undefined;
+function handleSMeDestroy() {
+	sMe = undefined;
 }
 
-function handleMeReadable() {
+function handleSMeReadable() {
 	if (merging) {
 		return;
 	}
 
-	var diff = me.read();
+	var diff = sMe.read();
 
 	if (diff) {
 		socket.emit('diff', diff);
@@ -195,7 +197,7 @@ function handleDiff(diff) {
 
 function handleChatInput(e) {
 	if (e.keyCode === 13) {
-		me.c.push(e.srcElement.value);
+		sMe.c.push(e.srcElement.value);
 		e.srcElement.value = '';
 		e.preventDefault();
 		e.stopPropagation();
@@ -227,15 +229,14 @@ function handleBadName() {
 
 function handleNameSet(name) {
 	console.log('Name set to', name);
-	me = sCats[name];
+	sMe = sCats[name];
+	cMe = cCats[name];
 
 	// set initial offset relative to your cat position
+	updateOffset();
 
-	offset.x = Math.max(me.t.x - halfCanvasW, 0);
-	offset.y = Math.max(me.t.y - halfCanvasH, 0);
-
-	me.on('readable', handleMeReadable);
-	me.on('destroy', handleMeDestroy);
+	sMe.on('readable', handleSMeReadable);
+	sMe.on('destroy', handleSMeDestroy);
 
 	var welcome = document.getElementById('Welcome');
 	welcome.style.display = 'none';
@@ -248,13 +249,11 @@ function handleNameSet(name) {
 
 function catUpdate(o) {
 	var name = this.name;
-	console.log(name, 'updating');
-
 	var cat = cCats[name].t;
 
-	var newX = o.hasOwnProperty('x') ? Math.round(o.x) : cat.x;
-	var newY = o.hasOwnProperty('y') ? Math.round(o.y) : cat.y;
-	var newO = o.hasOwnProperty('o') ? o.o : cat.o;
+	var newX = o.hasOwnProperty('x') ? Math.round(o.x) : cat.x.valueOf();
+	var newY = o.hasOwnProperty('y') ? Math.round(o.y) : cat.y.valueOf();
+	var newO = o.hasOwnProperty('o') ? o.o : cat.o.valueOf();
 	var newD = cat.d;
 
 	if (newX > cat.x) {
@@ -268,6 +267,10 @@ function catUpdate(o) {
 	}
 
 	cat.assign({ x: newX, y: newY, d: newD, o: newO });
+
+	if (cMe && cMe.getKey() === name) {
+		updateOffset();
+	}
 }
 
 function handleCatMove() {
@@ -275,8 +278,8 @@ function handleCatMove() {
 	var oldT = cCats[name].t;
 	var newT = this.t;
 
-	var tween = Tween({ x: oldT.x, y: oldT.y })
-		.to({ x: newT.x, y: newT.y })
+	var tween = Tween({ x: oldT.x.valueOf(), y: oldT.y.valueOf() })
+		.to({ x: newT.x.valueOf(), y: newT.y.valueOf() })
 		.duration(500)
 		.ease('in-out-sine')
 		.update(catUpdate);
@@ -349,7 +352,7 @@ function handleGameData(data) {
 }
 
 function handleWindowMouseDown(event) {
-	if (!me) {
+	if (!sMe) {
 		return;
 	}
 
@@ -357,7 +360,7 @@ function handleWindowMouseDown(event) {
 		return;
 	}
 
-	var cat = cCats[me.getKey()].t;
+	var cat = cCats[sMe.getKey()].t;
 
 	var eX = event.offsetX || event.clientX;
 	var eY = event.offsetY || event.clientY;
@@ -379,39 +382,6 @@ function handleWindowMouseMove(event) {
 
 	mouse.x = eX;
 	mouse.y = eY;
-
-	return;
-	if (!dragging) {
-		return;
-	}
-
-	if (!me) {
-		return;
-	}
-
-	var cat = cCats[me.getKey()].t;
-
-
-
-	var newX = Math.min(eX, canvas.width);
-	var newY = Math.min(eY, canvas.height);
-
-	newX = Math.max(newX, 0);
-	newY = Math.max(newY, 0);
-
-	var newD = cat.d;
-
-	if (newX > cat.x) {
-		newD = 'r';
-	} else if (newX < cat.x) {
-		newD = 'l';
-	}
-
-	if (cat.x == newX && cat.y == newY && cat.d == newD) {
-		return;
-	}
-
-	cat.assign({ x: newX, y: newY, d: newD });
 }
 
 socket.on('game', handleGameData);
