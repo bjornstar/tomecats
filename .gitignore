@@ -7,13 +7,16 @@ lib-cov
 *.pid
 *.gz
 
+Thumbs.db
+
+.DS_Store
+._.DS_Store
+
 pids
 logs
 results
 
 npm-debug.log
-.DS_Store
-._.DS_Store
 node_modules/
 
 components/

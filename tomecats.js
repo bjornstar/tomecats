@@ -7,37 +7,38 @@ var build   = require('./build');
 // AppFog uses VCAP_APP_PORT
 
 var port = process.env.PORT || process.env.VCAP_APP_PORT || 3000;
+var map = { x: 2000, y: 2000 };
 
 function log(data) {
 	console.log('[' + new Date().toISOString() + '] tomecats.' + process.pid + ': ' + data);
 }
 
-var cats = Tome.conjure({});
+var game = Tome.conjure({ map: map, cats: {} });
 var catMap = {};
 var merging;
 
 function handleSocketDisconnect() {
-	log('Client ' + this.id + ' disconnected.');
+	log(this.id + ' disconnected.');
 
 	var name = catMap[this.id].name;
 	delete catMap[this.id];
 
-	if (cats.hasOwnProperty(name)) {
-		cats.del(name);
+	if (game.cats.hasOwnProperty(name)) {
+		game.cats.del(name);
 	}
 }
 
 function handleCatDiff(diff) {
-	log('Client ' + this.id + ' sent a diff:' + JSON.stringify(diff));
+	log(this.id + ' sent a diff:' + JSON.stringify(diff));
 
 	if (!catMap[this.id].name) {
 		return; // has no cat.
 	}
 
 	merging = true;
-	cats.merge(diff);
+	game.cats.merge(diff);
 	this.broadcast.emit('diff', diff);
-	cats.read();
+	game.cats.read();
 	merging = false;
 }
 
@@ -50,16 +51,16 @@ function handleCatsReadable() {
 
 	if (diff) {
 		for (var id in catMap) {
-			log('Client ' + id + ' getting '+ JSON.stringify(diff));
+			log(id + ' getting '+ JSON.stringify(diff));
 			catMap[id].socket.emit('diff', diff);
 		}
 	}
 }
 
-cats.on('readable', handleCatsReadable);
+game.cats.on('readable', handleCatsReadable);
 
 function nameIsOk(name) {
-	if (cats.hasOwnProperty(name)) {
+	if (game.cats.hasOwnProperty(name)) {
 		return false;
 	}
 
@@ -84,19 +85,19 @@ function handleSetName(name) {
 			return this.emit('badname');
 		}
 
-		cats.rename(catMap[this.id].name, name);
+		game.cats.rename(catMap[this.id].name, name);
 	} else {
 		if (!nameIsOk(name)) {
 			return this.emit('badname');
 		}
 
-		var rndX = rnd(500) + 10;
+		var rndX = rnd(500) + 50;
 		var rndY = rnd(400) + 50;
 
 		var now = new Date().getTime();
 
-		cats.set(name, { t: { x: rndX, y: rndY, d: 'l', s: 'c1' }, c: [] });
-		cats[name].c.on('add', function () {
+		game.cats.set(name, { t: { x: rndX, y: rndY, d: 'l', s: 'c1' }, c: [] });
+		game.cats[name].c.on('add', function () {
 			var that = this;
 			setTimeout(function () {
 				that.shift();
@@ -110,11 +111,11 @@ function handleSetName(name) {
 }
 
 function handleSocketsConnection(socket) {
-	log('Client ' + socket.id + ' connected.');
+	log(socket.id + ' connected.');
 	
 	catMap[socket.id] = { socket: socket };
 
-	socket.emit('cats', cats);
+	socket.emit('game', game);
 	socket.on('disconnect', handleSocketDisconnect);
 	socket.on('diff', handleCatDiff);
 	socket.on('setName', handleSetName);
