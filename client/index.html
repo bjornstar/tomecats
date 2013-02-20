@@ -18,8 +18,8 @@
   </div>
   <div id="Welcome">
     <h1>Welcome to Tome Cats</h1>
-    <p>Please choose your cat:</p>
     <ul id="catTypes">
+      <p>Please choose your cat:</p>
       <li><img src="/images/c1.png" id="c1" class="catType" /></li>
       <li><img src="/images/c2.png" id="c2" class="catType" /></li>
       <li><img src="/images/c3.png" id="c3" class="catType" /></li>
@@ -32,6 +32,7 @@
       <li><img src="/images/c10.png" id="c10" class="catType" /></li>
     </ul>
     <ul id="propTypes">
+      <p>Please choose an accessory:</p>
       <li><img src="/images/a1.png" id="a1" class="propType" /></li>
       <li><img src="/images/a2.png" id="a2" class="propType" /></li>
       <li><img src="/images/a3.png" id="a3" class="propType" /></li>
@@ -40,7 +41,9 @@
       <li><img src="/images/a6.png" id="a6" class="propType" /></li>
       <li><img src="/images/a7.png" id="a7" class="propType" /></li>
     </ul>
-    <p><label for="name">Choose a name for your cat: </label> <input type="text" id="name" name="name" /> <input type="submit" id="login" name="login" value="Login" /></p>
+    <div id="nameDiv">
+      <p><label for="name">Choose a name for your cat: </label> <input type="text" id="name" name="name" /> <input type="submit" id="login" name="login" value="Login" /></p>
+    </div>
     <p id="loginError"></p>
   </div>
   <input id="chat" placeholder="meow" />

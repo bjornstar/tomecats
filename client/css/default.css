@@ -114,6 +114,26 @@ ul {
 
 li {
   float: left;
+  margin: 4px;
+  padding: 0, 10px, 10px, 0;
+  width: 100px;
+  height: 100px;
+}
+
+#catTypes img:hover{
+  background: url('/images/grass.png') #d4f1b3;
+  box-shadow: inset 3px 3px 10px #bd9;
+  border-radius: 5px;
+  padding-left: 8px;
+  padding-bottom: 8px;
+}
+
+#propTypes {
+  display: none;
+}
+
+#nameDiv {
+  display: none;
 }
 
 #chat {

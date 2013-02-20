@@ -99,7 +99,7 @@ function handleChatInput(e) {
 		me.chat.push(chatText);
 		
 		// clear the chat box.
-		chatText = '';
+		this.value = '';
 		
 		return false;
 	}
