@@ -12,7 +12,7 @@ a {
   text-decoration: none;
   color: rgba(0,0,0,1);
 }
-#badname {
+#loginError {
   color: #c33;
 }
 #Welcome {
@@ -102,7 +102,7 @@ div.chatList div {
   background: #fff;
   border: 2px solid #000;
   margin: 4px;
-  padding: 3px;
+  padding: 4px;
   -webkit-transition: opacity 1s;
   -moz-transition: opacity 1s;
   opacity: 0;
@@ -125,4 +125,6 @@ li {
   bottom: 0;
   position: absolute;
   width: 100%;
+  padding-left: 4px;
+  z-index: 5;
 }

@@ -35,10 +35,9 @@ var build   = require('./build');
 // AppFog uses VCAP_APP_PORT
 
 var port = process.env.PORT || process.env.VCAP_APP_PORT || 3000;
-var map = { x: 2000, y: 500 };
 var chatDuration = 3000;
 
-var game = Tome.conjure({ map: map, cats: {} });
+var cats = Tome.conjure({});
 var catMap = {};
 var merging;
 
@@ -47,7 +46,7 @@ function log(data) {
 }
 
 function nameIsOk(name) {
-	if (game.cats.hasOwnProperty(name)) {
+	if (cats.hasOwnProperty(name)) {
 		return false;
 	}
 
@@ -59,7 +58,7 @@ function nameIsOk(name) {
 }
 
 function rnd(n) {
-	return Math.round(Math.random() * n);
+	return Math.floor(Math.random() * n);
 }
 
 function handleSocketDisconnect() {
@@ -68,8 +67,8 @@ function handleSocketDisconnect() {
 	var name = catMap[this.id].name;
 	delete catMap[this.id];
 
-	if (game.cats.hasOwnProperty(name)) {
-		game.cats.del(name);
+	if (cats.hasOwnProperty(name)) {
+		cats.del(name);
 	}
 }
 
@@ -81,9 +80,9 @@ function handleCatDiff(diff) {
 	}
 
 	merging = true;
-	game.cats.merge(diff);
+	cats.merge(diff);
 	this.broadcast.emit('diff', diff);
-	game.cats.read();
+	cats.read();
 	merging = false;
 }
 
@@ -102,7 +101,7 @@ function handleCatsReadable() {
 	}
 }
 
-game.cats.on('readable', handleCatsReadable);
+cats.on('readable', handleCatsReadable);
 
 function setChatExpire() {
 	var that = this;
@@ -111,32 +110,37 @@ function setChatExpire() {
 	}, chatDuration);
 }
 
-function handleSetName(name) {
-	if (catMap[this.id].hasOwnProperty('name')) {
-		if (catMap[this.id].name === name) {
-			return;
-		}
-
-		if (!nameIsOk(name)) {
-			return this.emit('badname');
-		}
-
-		game.cats.rename(catMap[this.id].name, name);
-	} else {
-		if (!nameIsOk(name)) {
-			return this.emit('badname');
-		}
-
-		var rndX = rnd(500) + 50;
-		var rndY = rnd(400) + 50;
-
-		game.cats.set(name, { t: { x: rndX, y: rndY, d: 'l', s: 'c1' }, c: [] });
-		game.cats[name].c.on('add', setChatExpire);
+function handleLogin(name, catType, propType, x, y, d) {
+	if (!nameIsOk(name)) {
+		return this.emit('badname');
 	}
+
+	if (catMap[this.id].hasOwnProperty('name')) {
+		return cats.rename(catMap[this.id].name, name);
+	}
+
+	var rndX = rnd(500) + 50;
+	var rndY = rnd(400) + 50;
+	var rndCat = rnd(10) + 1;
+	var rndProp = rnd(7) + 1;
+
+	var newCat = {
+		catType: catType || 'c' + rndCat,
+		propType: propType || 'a' + rndProp,
+		pos: {
+			x: x || rndX,
+			y: y || rndY,
+			d: d || 'r'
+		},
+		chat: []
+	};
+
+	cats.set(name, newCat);
+	cats[name].chat.on('add', setChatExpire);
 	
 	catMap[this.id].name = name;
 
-	this.emit('nameSet', name);
+	this.emit('loggedIn', name);
 }
 
 function handleSocketsConnection(socket) {
@@ -144,10 +148,10 @@ function handleSocketsConnection(socket) {
 	
 	catMap[socket.id] = { socket: socket };
 
-	socket.emit('game', game);
+	socket.emit('game', cats);
 	socket.on('disconnect', handleSocketDisconnect);
 	socket.on('diff', handleCatDiff);
-	socket.on('setName', handleSetName);
+	socket.on('login', handleLogin);
 }
 
 function isNumber (o) {
