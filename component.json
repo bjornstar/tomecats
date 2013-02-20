@@ -6,10 +6,12 @@
     "component/raf": "*",
     "bjornstar/tomes": "*",
     "component/tween": "*",
-    "component/history": "*"
+    "component/emitter": "*"
   },
   "scripts": [
-    "client/tomecats.js"
+    "client/tomecats.js",
+    "client/catselect.js",
+    "client/catainer.js"
   ],
   "main": "client/tomecats.js"
 }

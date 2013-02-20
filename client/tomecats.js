@@ -28,12 +28,13 @@
 
 // We can require Tomes thanks to component.
 var Tome = require('tomes').Tome;
+var Catainer = require('./catainer').Catainer;
 
 // We include socket.io on the page.
 var socket = io.connect();
 
 // These are our global variables for the game.
-var cats, me, merging;
+var cats, me, merging, catSelect;
 
 // This is our click handler.
 function handlePlaygroundMouseUp(event) {
@@ -65,7 +66,7 @@ function handleMeDestroy() {
 	// If we got destroyed it's because the server restarted, let's log in with
 	// our current information.
 
-	login(me.getKey(), me.catType, me.propType, me.pos.x, me.pos.y, me.pos.d);
+	login(me.getKey(), me.catType, me.propType, me.pos);
 }
 
 function handleMeReadable() {
@@ -88,34 +89,18 @@ function handleMeReadable() {
 	}
 }
 
-function handleBadName() {
-	// Set the loginError text
-	var loginError = document.getElementById('loginError');
-	loginError.textContent = 'Invalid name, please try a different one.';
-
-	// Show the welcome screen
-	var welcome = document.getElementById('Welcome');
-	welcome.style.display = '';
-
-	// Show the blocker
-	var blocker = document.getElementById('blocker');
-	blocker.style.display = '';
-}
-
 function handleChatInput(e) {
 	// When you press enter (keycode 13) and there is text in the chat box.
-	if (e.keyCode === 13 && e.target.value.length) {
-		
+	var chatText = this.value;
+	if (e.keyCode === 13 && chatText.length) {
 		// Push the text onto our chat object. Remember, any changes we make
 		// automatically get sent to the server so we don't have to do anything
 		// else.
-		me.chat.push(e.target.value);
+		me.chat.push(chatText);
 		
 		// clear the chat box.
-		e.target.value = '';
+		chatText = '';
 		
-		e.preventDefault();
-		e.stopPropagation();
 		return false;
 	}
 	return true;
@@ -138,13 +123,7 @@ function handleLoggedIn(name) {
 	me.on('readable', handleMeReadable);
 	me.on('destroy', handleMeDestroy);
 
-	// Hide the welcome screen.
-	var welcome = document.getElementById('Welcome');
-	welcome.style.display = 'none';
-
-	// Hide the blocker.
-	var blocker = document.getElementById('blocker');
-	blocker.style.display = 'none';
+	catSelect.hide();
 
 	// Setup the chat box event handlers.
 	setupChatHooks();
@@ -159,135 +138,36 @@ function addCat(name) {
 	// nametag, and chat bubbles. We do this so we can just move the catainer
 	// and everything will move together.
 
-	var cnt = document.createElement('div');
-	cnt.className = 'catainer';
-	cnt.style.transform = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
-	cnt.style.webkitTransform = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
-
-	// Create the cat.
-
-	var div = document.createElement('div');
-	div.className = 'cat';
-	div.style.backgroundImage = 'url(/images/' + cat.catType + '.png)';
-	div.style.transform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
-	div.style.webkitTransform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
-
-	// Now create the cat props.
-
-	var prop = document.createElement('div');
-	prop.className = 'prop';
-	prop.style.backgroundImage = 'url(/images/' + cat.propType + '.png)';
-	prop.style.transform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
-	prop.style.webkitTransform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
-
-	// And create the nametag.
-
-	var nametag = document.createElement('div');
-	nametag.className = 'nametag';
-	nametag.textContent = name;
-
-	// And the chat bubbles.
-
-	var chatList = document.createElement('div');
-	chatList.className = 'chatList';
-
-	// Stick them all into the 'catainer'
-
-	cnt.appendChild(chatList);
-	cnt.appendChild(div);
-	cnt.appendChild(prop);
-	cnt.appendChild(nametag);
-
-	// Finally, put the catainer onto the playground with the other cats.
-
-	var playground = document.getElementById('playground');
-	playground.appendChild(cnt);
-
-
-	// We want the cat to fade in. The default opacity of a catainer is 0, we
-	// use setTimeout to trigger a transition.
-
-	setTimeout(function () {
-		cnt.style.opacity = 1;
-	}, 0);
+	var myCatainer = new Catainer(cat);
 
 	// Now comes the fun part: wiring up the cat's changes.
 
-	// First we want to create transforms for when our cat's position changes.
+	// When the cat's position changes, we want to animate it into position.
 
-	cat.pos.on('readable', function () {
-		var movement = 'translate(' + this.x + 'px, ' + this.y + 'px)';
-		var direction = 'scaleX(' + (this.d == 'l' ? -1 : 1) + ')';
-
-		// We apply movement transforms to the whole catainer so that
-		// everything moves together.
-
-		cnt.style.transform = movement;
-		cnt.style.webkitTransform = movement;
-
-		// We want to be able to flip the cat left and right, but not the text
-		// so we only apply the direction changes to the cat.
-
-		div.style.transform = direction;
-		div.style.webkitTransform = direction;
-
-		// And of course we want the cat's props to stay on the cat so we flip
-		// them too.
-
-		prop.style.transform = direction;
-		prop.style.webkitTransform = direction;
+	cat.pos.on('readable', function() {
+		myCatainer.move();
 	});
 
 	// When a user logs out, the server deletes the cat. We want to fade out
 	// the cat so we listen for the destroy event.
 
 	cat.on('destroy', function() {
-		// We fade out the cat by setting the opacity to 0.
-		cnt.style.opacity = 0;
-
-		// and when the opacity reaches 0 we remove the cat from the playground.
-		cnt.addEventListener('transitionEnd', function () {
-			playground.removeChild(cnt);
-		});
-
-		cnt.addEventListener('webkitTransitionEnd', function () {
-			playground.removeChild(cnt);
-		});
+		myCatainer.destroy();
 	});
 
+	// When some text gets added to a cat's chat we want to display it.
+	
 	cat.chat.on('add', function (index) {
-		// When some text gets added to a cat's chat we want to display it.
-
 		var chatText = this[index];
-
-		// Create a new chat bubble.
-		var newChat = document.createElement('div');
-		newChat.textContent = chatText;
-
-		// Stick it on the chatList.
-		chatList.appendChild(newChat);
-
-		// We want the chat bubbles to fade in just like our cat.
-		setTimeout(function () {
-			newChat.style.opacity = 1;
-		}, 0);
+		
+		var chatDiv = myCatainer.chat(chatText);
 
 		// The server takes care of cleaning up chat messages after a certain
 		// period of time. All we need to do is listen for it to be destroyed
 		// and remove the chat bubble.
-
+		
 		chatText.on('destroy', function () {
-			// Make the chat bubble fade out by setting the opacity to 0.
-			newChat.style.opacity = 0;
-
-			// And when the fade out is done, we remove the chat bubble.
-			newChat.addEventListener('transitionEnd', function () {
-				chatList.removeChild(newChat);
-			});
-
-			newChat.addEventListener('webkitTransitionEnd', function () {
-				chatList.removeChild(newChat);
-			});
+			myCatainer.destroyChat(chatDiv);
 		});
 	});
 }
@@ -340,58 +220,22 @@ socket.on('game', handleGameData);
 // The server emits diff with a diff whenever there are changes
 socket.on('diff', handleDiff);
 
-// If our name is taken the server emits badname.
-socket.on('badname', handleBadName);
-
 // The server emits loggedin with our name when we have succesfully logged in.
 socket.on('loggedIn', handleLoggedIn);
 
-function login(name, catType, propType, x, y, d) {
-	// Clear the error text.
-	var loginError = document.getElementById('loginError');
-	loginError.textContent = '';
-
+function login(name, catType, propType, pos) {
 	// Send our login information to the server.
-	socket.emit('login', name, catType, propType, x, y, d);
+	socket.emit('login', name, catType, propType, pos);
 }
 
 function contentLoaded() {
 	// The page has loaded completely, we can start our game.
-
-	var ulCatTypes = document.getElementById('catTypes');
-	ulCatTypes.addEventListener('mouseup', function (e) {
-		console.log(e.target);
-	});
-
-	// Get the input box for our cat's name.
-	var name = document.getElementById('name');
+	catSelect = require('./catselect').CatSelect();
 	
-	// Set keyboard focus on it so we can start typing immediately.
-	name.focus();
-
-	// Listen for return.
-	name.addEventListener('keydown', function (e) {
-		// If it's return and we have some text, login with that name.
-
-		if (e.keyCode === 13 && e.target.value.length) {
-			login(e.target.value);
-		}
-	});
-
-	var loginButton = document.getElementById('login');
-
-	loginButton.addEventListener('click', function (e) {
-		// If we don't have any text, do nothing.
-		if (!name.value.length) {
-			return;
-		}
-
-		// Login with that name.
-		login(name.value);
-
-		e.preventDefault();
-		e.stopPropagation();
-	}, false);
+	catSelect.on('login', login);
+	
+	// If our name is taken the server emits badname.
+	socket.on('badname', catSelect.showBadName);
 
 	// Listen for clicks on the playground.
 	var playground = document.getElementById('playground');
