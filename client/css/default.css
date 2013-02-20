@@ -106,6 +106,7 @@ div.chatList div {
   -webkit-transition: opacity 1s;
   -moz-transition: opacity 1s;
   opacity: 0;
+  border-radius: 9.3px;
 }
 
 ul {
@@ -115,24 +116,22 @@ ul {
 li {
   float: left;
   margin: 4px;
-  padding: 0, 10px, 10px, 0;
   width: 100px;
   height: 100px;
 }
 
-#catTypes img:hover{
-  background: url('/images/grass.png') #d4f1b3;
+li img {
+  padding-left: 8px;
+  padding-bottom: 6px;
+}
+
+#catTypes img:hover, #propTypes img:hover{
+  background-color: #d4f1b3;
   box-shadow: inset 3px 3px 10px #bd9;
   border-radius: 5px;
-  padding-left: 8px;
-  padding-bottom: 8px;
 }
 
-#propTypes {
-  display: none;
-}
-
-#nameDiv {
+#propTypes, #nameDiv {
   display: none;
 }
 
@@ -147,4 +146,54 @@ li {
   width: 100%;
   padding-left: 4px;
   z-index: 5;
+}
+
+#propTypes img {
+  background-position: 8px 0px;
+  background-repeat: no-repeat;
+}
+
+.c1 img {
+  background-image: url('/images/c1.png');
+}
+
+.c2 img {
+  background-image: url('/images/c2.png');
+}
+
+.c3 img {
+  background-image: url('/images/c3.png');
+}
+
+.c4 img {
+  background-image: url('/images/c4.png');
+}
+
+.c5 img {
+  background-image: url('/images/c5.png');
+}
+
+.c6 img {
+  background-image: url('/images/c6.png');
+}
+
+.c7 img {
+  background-image: url('/images/c7.png');
+}
+
+.c8 img {
+  background-image: url('/images/c8.png');
+}
+
+.c9 img {
+  background-image: url('/images/c9.png');
+}
+
+.c10 img {
+  background-image: url('/images/c10.png');
+}
+
+#yourCat {
+  height: 100px;
+  width: 91px;
 }

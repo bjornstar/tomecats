@@ -38,11 +38,37 @@ function inherits(Child, Parent) {
 exports = module.exports = new EventEmitter();
 
 exports.CatSelect = function () {
-	// Get the input box for our cat's name.
+	var catTypes = document.getElementById('catTypes');
+	var propTypes = document.getElementById('propTypes');
+	var nameDiv = document.getElementById('nameDiv');
 	var name = document.getElementById('name');
+	var yourCat = document.getElementById('yourCat');
 
-	// Set keyboard focus on it so we can start typing immediately.
-	name.focus();
+	var catType, propType;
+
+	catTypes.addEventListener('mouseup', function (e) {
+		catType = e.target.id;
+
+		catTypes.style.display = 'none';
+
+		propTypes.className = catType;
+		propTypes.style.display = 'block';
+	});
+
+	propTypes.addEventListener('mouseup', function (e) {
+		propType = e.target.id;
+
+		propTypes.style.display = 'none';
+
+		nameDiv.className = catType + ' ' + propType;
+		nameDiv.style.display = 'block';
+
+		var propImg = new Image();
+		propImg.src = '/images/' + propType + '.png';
+		yourCat.appendChild(propImg);
+
+		name.focus();
+	});
 
 	// Listen for return.
 	name.addEventListener('keydown', function (e) {
@@ -51,7 +77,7 @@ exports.CatSelect = function () {
 		// If it's return and we have some text, login with that name.
 		if (e.keyCode === 13 && nameString.length) {
 			exports.hideBadName();
-			exports.emit('login', nameString);
+			exports.emit('login', nameString, catType, propType);
 		}
 	});
 
@@ -69,7 +95,7 @@ exports.CatSelect = function () {
 		exports.hideBadName();
 
 		// Login with that name.
-		exports.emit('login', nameString);
+		exports.emit('login', nameString, catType, propType);
 
 		e.preventDefault();
 		e.stopPropagation();
