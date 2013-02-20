@@ -43,6 +43,18 @@ exports.CatSelect = function () {
 	var nameDiv = document.getElementById('nameDiv');
 	var name = document.getElementById('name');
 	var yourCat = document.getElementById('yourCat');
+	var startOver = document.getElementById('startOver');
+	var propImg;
+
+	startOver.addEventListener('mouseup', function () {
+		catTypes.style.display = '';
+		propTypes.style.display = 'none';
+		nameDiv.style.display = 'none';
+		if (propImg) {
+			yourCat.removeChild(propImg);
+			propImg = undefined;
+		}
+	});
 
 	var catType, propType;
 
@@ -63,7 +75,7 @@ exports.CatSelect = function () {
 		nameDiv.className = catType + ' ' + propType;
 		nameDiv.style.display = 'block';
 
-		var propImg = new Image();
+		propImg = new Image();
 		propImg.src = '/images/' + propType + '.png';
 		yourCat.appendChild(propImg);
 

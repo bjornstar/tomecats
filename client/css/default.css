@@ -129,6 +129,7 @@ li img {
   background-color: #d4f1b3;
   box-shadow: inset 3px 3px 10px #bd9;
   border-radius: 5px;
+  cursor: pointer;
 }
 
 #propTypes, #nameDiv {
@@ -196,4 +197,11 @@ li img {
 #yourCat {
   height: 100px;
   width: 91px;
+}
+
+#startOver {
+  position: relative;
+  text-align: right;
+  margin-right: 10px;
+  cursor: pointer;
 }
