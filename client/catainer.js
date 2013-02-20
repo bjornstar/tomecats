@@ -65,10 +65,11 @@ function Catainer(cat) {
 
 	// Stick them all into the 'catainer'
 
-	cnt.appendChild(chatList);
+	
 	cnt.appendChild(div);
 	cnt.appendChild(prop);
 	cnt.appendChild(nametag);
+	cnt.appendChild(chatList);
 
 	// Finally, put the catainer onto the playground with the other cats.
 

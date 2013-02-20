@@ -111,6 +111,10 @@ function setupChatHooks() {
 	var chatinput = document.getElementById('chat');
 	chatinput.addEventListener('keypress', handleChatInput);
 
+	window.addEventListener('keypress', function () {
+		chatinput.focus();
+	});
+
 	// Set keyboard focus to the chat box.
 	chatinput.focus();
 }
