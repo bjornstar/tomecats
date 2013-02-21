@@ -16,7 +16,7 @@
         "socket.io": "*",
         "tomes": "*",
         "component-builder": "*",
-        "component"
+        "component": "*"
     },
     "license": {
         "type": "MIT",
