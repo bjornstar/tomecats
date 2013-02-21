@@ -11,14 +11,31 @@
   <title>Tome Cats</title>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+  <div id="audio">
+    <audio id="a1" preload="auto" src="/audio/a1.mp3"></audio>
+    <audio id="a2" preload="auto" src="/audio/a2.mp3"></audio>
+    <audio id="a3" preload="auto" src="/audio/a3.mp3"></audio>
+    <audio id="a4" preload="auto" src="/audio/a4.mp3"></audio>
+    <audio id="a5" preload="auto" src="/audio/a5.mp3"></audio>
+    <audio id="b1" preload="auto" src="/audio/b1.mp3"></audio>
+    <audio id="b2" preload="auto" src="/audio/b2.mp3"></audio>
+    <audio id="b3" preload="auto" src="/audio/b3.mp3"></audio>
+    <audio id="c1" preload="auto" src="/audio/c1.mp3"></audio>
+    <audio id="c2" preload="auto" src="/audio/c2.mp3"></audio>
+    <audio id="c3" preload="auto" src="/audio/c3.mp3"></audio>
+    <audio id="c4" preload="auto" src="/audio/c4.mp3"></audio>
+    <audio id="c5" preload="auto" src="/audio/c5.mp3"></audio>
+  </div>
+  <div id="playground">
+  </div>
   <div id="blocker">
     <div> </div>
   </div>
   <div id="Welcome">
     <h1>Welcome to Tome Cats</h1>
-    <p>Please choose your cat:</p>
+    <div id="startOver">start over</div>
     <ul id="catTypes">
+      <p>Please choose your cat:</p>
       <li><img src="/images/c1.png" id="c1" class="catType" /></li>
       <li><img src="/images/c2.png" id="c2" class="catType" /></li>
       <li><img src="/images/c3.png" id="c3" class="catType" /></li>
@@ -31,6 +48,7 @@
       <li><img src="/images/c10.png" id="c10" class="catType" /></li>
     </ul>
     <ul id="propTypes">
+      <p>Please choose an accessory:</p>
       <li><img src="/images/a1.png" id="a1" class="propType" /></li>
       <li><img src="/images/a2.png" id="a2" class="propType" /></li>
       <li><img src="/images/a3.png" id="a3" class="propType" /></li>
@@ -39,9 +57,12 @@
       <li><img src="/images/a6.png" id="a6" class="propType" /></li>
       <li><img src="/images/a7.png" id="a7" class="propType" /></li>
     </ul>
-    <p><label for="name">Please enter your cat's name: </label> <input type="text" id="name" name="name" /> <input type="submit" id="setName" name="setName" value="Set Name" /></p>
-    <p id="badname"></p>
+    <div id="nameDiv">
+      <div id="yourCat"> </div>
+      <p><label for="name">Choose a name for your cat: </label> <input type="text" id="name" name="name" /> <input type="submit" id="login" name="login" value="Login" /></p>
+    </div>
+    <p id="loginError"></p>
   </div>
-  <textarea id="chat"></textarea>
+  <input id="chat" placeholder="meow" />
 </body>
 </html>

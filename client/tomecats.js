@@ -26,503 +26,225 @@
 //  \/   \___/|_| |_| |_|\___\____/\__,_|\__|___/
 //
 
-var raf = require('raf');
+// We can require Tomes thanks to component.
 var Tome = require('tomes').Tome;
-var Tween = require('tween');
+var Catainer = require('./catainer').Catainer;
 
+// We include socket.io on the page.
 var socket = io.connect();
 
-var map = { width: 2000, height: 500 };
-var halfCanvasW = 0;
-var halfCanvasH = 0;
-var debug = true;
+// These are our global variables for the game.
+var cats, me, merging, catSelect;
 
-var sCats, sMe, cMe, canvas, context, sprite, prop, lastCats, dragging, merging, gameData;
-var cCats = Tome.conjure({});
-var tweens = {};
-var chatTweens = {};
-var offset = { x: 0, y: 0 };
-var mouse = { x: 0, y: 0 };
-
-function handleWindowMouseUp(event) {
-	// Did you click on the canvas?
-	if (event.target.tagName !== 'CANVAS') {
-		return;
-	}
-
+// This is our click handler.
+function handlePlaygroundMouseUp(event) {
 	// Do you have a cat yet?
-	if (!sMe) {
+	if (!me) {
 		return;
 	}
 
 	// Get mouse coords
-	var eX = event.offsetX || event.clientX;
-	var eY = event.offsetY || event.clientY;
+	var newX = event.pageX;
 
-	// Calculate real map coords
-	var dX = eX + offset.x;
-	var dY = eY + offset.y;
-
-	// Add some padding and do not exceed map coordinates
-	var newX = Math.max(Math.min(dX, map.width - sprite.width / 2), sprite.width / 2);
-	var newY = Math.max(Math.min(dY, map.height - sprite.height / 2 - 18), sprite.width / 2);
+	// Don't go over the chat box.
+	var newY = Math.min(event.pageY, this.clientHeight - 75);
 
 	// Are you moving left or right?
-	if (newX > sMe.t.x) {
-		newD = 'r';
-	} else if (newX < sMe.t.x) {
+	var newD = 'r';
+
+	if (newX < me.pos.x) {
 		newD = 'l';
 	}
 
-	sMe.t.assign({ x: newX, y: newY, d: newD });
+	// We update our position and it gets automatically distributed to all the
+	// other users thanks to the magic of tomes.
+
+	me.pos.assign({ x: newX, y: newY, d: newD });
 }
 
-function updateOffset() {
-	var meX = cMe ? cMe.t.x : 0;
-	var meY = cMe ? cMe.t.y : 0;
+function handleMeDestroy() {
+	// If we got destroyed it's because the server restarted, let's log in with
+	// our current information.
 
-	offset.x = Math.min(Math.max(meX - halfCanvasW, 0), Math.max(map.width - canvas.width, 0));
-	offset.y = Math.min(Math.max(meY - halfCanvasH, 0), Math.max(map.height - canvas.height, 0));
+	login(me.getKey(), me.catType, me.propType, me.pos);
 }
 
-function calcMouseOffset() {
-	var x = Math.max(Math.min(offset.x + mouse.x - halfCanvasW, map.width - canvas.width), 0);
-	var y = Math.max(Math.min(offset.y + mouse.y - halfCanvasH, map.height - canvas.height), 0);
+function handleMeReadable() {
+	// This is the magic of tomes. Whenever we make changes to our cat, we send
+	// that to the server.
 
-	return { x: x, y: y };
-}
+	// We set merging to true when we receive data from the server. Since we
+	// are getting changes from the server, we don't need to send that back.
 
-function drawDebugText() {
-	context.font = '8pt sans-serif';
-	context.textAlign = 'right';
-	context.fillText('mouse: ' + mouse.x + ', ' + mouse.y, canvas.width - 6, 18);
-	context.fillText('map: ' + (mouse.x + offset.x) + ', ' + (mouse.y + offset.y), canvas.width - 6, 32);
-	context.fillText('canvas: ' + canvas.width + ', ' + canvas.height, canvas.width - 6, 46);
-	context.fillText('offset: ' + offset.x + ', ' + offset.y, canvas.width - 6, 60);
-	var o = calcMouseOffset();
-	context.fillText('new: ' + o.x + ', ' + o.y, canvas.width - 6, 74);
-	if (cMe) {
-		context.fillText('cMe: ' + cMe.t.x + ', ' + cMe.t.y, canvas.width - 6, 88);
-	}
-	if (sMe) {
-		context.fillText('sMe: ' + sMe.t.x + ', ' + sMe.t.y, canvas.width - 6, 102);
-	}
-}
-
-function drawChats(ctx, chats) {
-	ctx.font = '16px sans-serif';
-	ctx.textAlign = 'left';
-
-	for (var i = 0, len = chats.length; i < len; i += 1) {
-		var chat = chats[i];
-		var txt = chat.v.valueOf();
-		var o = chat.o.valueOf();
-		var chatW = ctx.measureText(txt).width;
-
-		ctx.globalAlpha = o;
-
-		ctx.fillStyle = '#fff';
-		ctx.fillRect(-5, 20 - (len - i) * 20, chatW + 10, -26);
-		ctx.lineWidth = 2;
-		ctx.strokeRect(-5, 20 - (len - i) * 20, chatW + 10, -26);
-		ctx.fillStyle = '#000';
-		ctx.fillText(txt, 0, 13 - (len - i) * 20);
-	}
-}
-
-function draw() {
-	context.clearRect(0, 0, canvas.width, canvas.height);
-
-	if (debug) {
-		drawDebugText();
-	}
-	if (!sprite || !cCats) {
-		return;
-	}
-	var names = Object.keys(cCats);
-	for (var i = 0, len = names.length; i < len; i += 1) {
-		var name = names[i];
-		var cat = cCats[name].t;
-		var chat = cCats[name].c;
-
-		var x = cat.x - sprite.width / 2 - offset.x;
-		var y = cat.y - sprite.height / 2 - offset.y;
-
-		context.save();
-		context.translate(x, y);
-		
-		// set alpha
-		if (cat.o < 1) {
-			context.globalAlpha = cat.o.valueOf();
-		}
-
-		// draw cat name
-		context.font = 'bold 8pt sans-serif';
-		context.textAlign = 'center';
-		context.fillText(name, sprite.height / 2, sprite.height + 12);
-
-		// set cat flip
-		if (cat.d == 'l') {
-			context.translate(sprite.width, 0);
-			context.scale(-1, 1);
-		}
-
-		// draw cat
-
-		context.drawImage(sprite, 0, 0);
-
-		// draw chat
-		if (chat && chat.length) {
-			
-			// flip back
-			if (cat.d == 'l') {
-				context.scale(-1, 1);
-				context.translate(-sprite.width, 0);
-			}
-
-			drawChats(context, chat);
-		}
-
-		context.restore();
-	}
-}
-
-function resizeCanvas() {
-	var chat = document.getElementById('chat');
-	chat.style.width = (window.innerWidth - 10) + 'px';
-
-	canvas.width = window.innerWidth;
-	canvas.height = Math.min(map.height, window.innerHeight - chat.clientHeight - 10);
-
-	halfCanvasW = Math.round(canvas.width / 2);
-	halfCanvasH = Math.round(canvas.height / 2);
-
-	updateOffset();
-
-	draw();
-}
-
-function update() {
-	var name, tween;
-
-	for (name in tweens) {
-		tween = tweens[name];
-		tween.update();
-	}
-
-	for (name in chatTweens) {
-		tween = chatTweens[name];
-		tween.update();
-	}
-}
-
-function animate() {
-	raf(animate);
-
-	if (!cCats) {
-		return;
-	}
-
-	update();
-
-	var catsVersion = cCats.getVersion();
-	
-	if (lastCats === catsVersion) {
-		return;
-	}
-
-	draw();
-
-	lastCats = catsVersion;
-}
-
-function handleSMeDestroy() {
-	sMe = undefined;
-}
-
-function handleSMeReadable() {
 	if (merging) {
 		return;
 	}
 
-	var diff = sMe.read();
+	// Get the changes
+	var diff = me.read();
 
 	if (diff) {
+		// Send them to the server.
 		socket.emit('diff', diff);
 	}
 }
 
-function handleDiff(diff) {
-	merging = true;
-	sCats.merge(diff);
-	sCats.read();
-	merging = false;
-}
-
 function handleChatInput(e) {
-	if (e.keyCode === 13) {
-		sMe.c.push(e.target.value);
-		e.target.value = '';
-		e.preventDefault();
-		e.stopPropagation();
+	// When you press enter (keycode 13) and there is text in the chat box.
+	var chatText = this.value;
+	if (e.keyCode === 13 && chatText.length) {
+		// Push the text onto our chat object. Remember, any changes we make
+		// automatically get sent to the server so we don't have to do anything
+		// else.
+		me.chat.push(chatText);
+		
+		// clear the chat box.
+		this.value = '';
+		
 		return false;
 	}
 	return true;
 }
 
 function setupChatHooks() {
+	// Setup a listener for the chat box.
 	var chatinput = document.getElementById('chat');
 	chatinput.addEventListener('keypress', handleChatInput);
 
+	window.addEventListener('keypress', function () {
+		chatinput.focus();
+	});
+
+	// Set keyboard focus to the chat box.
 	chatinput.focus();
 }
 
-function handleBadName() {
-	console.log('bad name.');
-	var badname = document.getElementById('badname');
-	badname.textContent = 'Invalid name, please try a different one.';
-	var welcome = document.getElementById('Welcome');
-	var blocker = document.getElementById('blocker');
-	welcome.style.display = '';
-	blocker.style.display = '';
-}
+function handleLoggedIn(name) {
+	// You just logged in. Assign your cat to the me variable.
+	me = cats[name];
 
-function handleNameSet(name) {
-	sMe = sCats[name];
-	cMe = cCats[name];
+	// Set up a listener for changes to our cat.
+	me.on('readable', handleMeReadable);
+	me.on('destroy', handleMeDestroy);
 
-	// set initial offset relative to your cat position
-	updateOffset();
+	catSelect.hide();
 
-	sMe.on('readable', handleSMeReadable);
-	sMe.on('destroy', handleSMeDestroy);
-
-	var welcome = document.getElementById('Welcome');
-	welcome.style.display = 'none';
-
-	var blocker = document.getElementById('blocker');
-	blocker.style.display = 'none';
-
+	// Setup the chat box event handlers.
 	setupChatHooks();
 }
 
-function updateCat(o) {
-	var name = this.name;
-	var cat = cCats[name].t;
+function addCat(name) {
+	// A cat was added to the game.
 
-	var newX = o.hasOwnProperty('x') ? Math.round(o.x) : cat.x.valueOf();
-	var newY = o.hasOwnProperty('y') ? Math.round(o.y) : cat.y.valueOf();
-	var newO = o.hasOwnProperty('o') ? o.o : cat.o.valueOf();
-	var newD = cat.d;
+	var cat = cats[name];
 
-	if (newX > cat.x) {
-		newD = 'r';
-	} else if (newX < cat.x) {
-		newD = 'l';
-	}
+	// Create a container for the cat (a catainer), this holds the cat, props,
+	// nametag, and chat bubbles. We do this so we can just move the catainer
+	// and everything will move together.
 
-	if (newX == cat.x && newY == cat.y && newD == cat.d && newO == cat.o) {
-		return;
-	}
+	var myCatainer = new Catainer(cat);
 
-	cat.assign({ x: newX, y: newY, d: newD, o: newO });
+	// Now comes the fun part: wiring up the cat's changes.
 
-	if (cMe && cMe.getKey() === name) {
-		updateOffset();
-	}
-}
+	// When the cat's position changes, we want to animate it into position.
 
-function handleMoveCat() {
-	var name = this.getParent().getKey();
-	var oldT = cCats[name].t;
-	var newT = this;
-
-	var tween = Tween({ x: oldT.x.valueOf(), y: oldT.y.valueOf() })
-		.to({ x: newT.x.valueOf(), y: newT.y.valueOf() })
-		.duration(500)
-		.ease('in-out-sine')
-		.update(updateCat);
-	tween.name = name;
-	tweens[name] = tween;
-}
-
-function updateChat(o) {
-	this.c.set('o', o.o);
-}
-
-function now() {
-	return new Date().getTime();
-}
-
-function handleAddChat(index) {
-	var name = this.getParent().getKey();
-	var c = cCats[name].c;
-	
-	c.push({ v: this[index], o: 0 });
-	
-	var tween = Tween({ o: 0 })
-		.to({ o: 1 })
-		.duration(750)
-		.ease('out-expo')
-		.update(updateChat);
-	tween.c = c[c.length - 1];
-
-	var tweenName = name + '-' + now();
-	chatTweens[tweenName] = tween;
-
-	tween.on('end', function () {
-		delete chatTweens[tweenName];
+	cat.pos.on('readable', function() {
+		myCatainer.move();
 	});
-}
 
-function handleDelChat() {
-	var name = this.getParent().getKey();
-	var c = cCats[name].c;
+	// When a user logs out, the server deletes the cat. We want to fade out
+	// the cat so we listen for the destroy event.
 
-	var tween = Tween({ o: 1 })
-		.to({ o: 0 })
-		.duration(750)
-		.ease('out-expo')
-		.update(updateChat);
-
-	var toDel = 0;
-
-	while (c[toDel].d) {
-		toDel += 1;
-	}
-
-	tween.c = c[toDel];
-
-	c[toDel].set('d', true);
-	
-	var tweenName = name + '-' + now();
-	chatTweens[tweenName] = tween;
-
-	tween.on('end', function () {
-		cCats[name].c.shift();
-		delete chatTweens[tweenName];
+	cat.on('destroy', function() {
+		myCatainer.destroy();
 	});
-}
 
-function handleAddCat(name) {
-	console.log('cat added:', name);
+	// When some text gets added to a cat's chat we want to display it.
+	
+	cat.chat.on('add', function (index) {
+		var chatText = this[index];
+		
+		var chatDiv = myCatainer.chat(chatText);
 
-	var cat = sCats[name];
-	var t = { x: cat.t.x.valueOf(), y: cat.t.y.valueOf(), d: cat.t.d.valueOf(), o: 0 };
-
-	cCats.set(name, { t: t, c: [] });
-
-	var tween = Tween({ o: 0 })
-		.to({ o: 1 })
-		.duration(600)
-		.ease('out-expo')
-		.update(updateCat);
-	tween.name = name;
-	tweens[name] = tween;
-
-	cat.t.on('readable', handleMoveCat);
-	cat.c.on('add', handleAddChat);
-	cat.c.on('del', handleDelChat);
-}
-
-function handleDelCat(name) {
-	console.log('cat deleted:', name);
-	var tween = Tween({ o: 1 })
-		.to({ o: 0 })
-		.duration(600)
-		.ease('out-expo')
-		.update(updateCat);
-	tween.name = name;
-	tweens[name] = tween;
-	tween.on('end', function () {
-		cCats.del(name);
-		delete tweens[name];
+		// The server takes care of cleaning up chat messages after a certain
+		// period of time. All we need to do is listen for it to be destroyed
+		// and remove the chat bubble.
+		
+		chatText.on('destroy', function () {
+			myCatainer.destroyChat(chatDiv);
+		});
 	});
 }
 
 function handleGameData(data) {
-	console.log('Game data:', JSON.stringify(data));
+	// When we connect to the server, the server sends us a copy of the game
+	// data.
 
-	gameData = Tome.conjure(data);
-	sCats = gameData.cats;
-	window.cats = sCats;
-	var names = Object.keys(sCats);
+	// If we already have game data we need to destroy our copy of the data.
+	// Everything gets cleaned up automatically.
 
-	for (var i = 0, len = names.length; i < len; i += 1) {
-		var name = names[i];
-		handleAddCat(name);
+	if (cats) {
+		Tome.destroy(cats);
 	}
 
-	sCats.on('add', handleAddCat);
-	sCats.on('del', handleDelCat);
+	// Conjure a new Tome to hold our game data.
+	cats = Tome.conjure(data);
+
+	// Go through the list of cats in the game and add them to our playground.
+	for (var name in cats) {
+		if (cats.hasOwnProperty(name)) {
+			addCat(name);
+		}
+	}
+
+	// And add a listener for more cats to join the party.
+	cats.on('add', addCat);
 }
 
-function handleWindowMouseMove(event) {
-	var eX = event.offsetX || event.clientX;
-	var eY = event.offsetY || event.clientY;
+function handleDiff(diff) {
+	// The server sends us updates to the game. We set merging to true so that
+	// we know that all events triggered are from the server.
 
-	mouse.x = eX;
-	mouse.y = eY;
+	merging = true;
+
+	// We merge the diff into our game data.
+	cats.merge(diff);
+
+	// And throw away the diffs generated when we merged the data.
+	cats.read();
+
+	// And now we're done updating so we set merging to false.
+	merging = false;
 }
 
+// The server emits game with gamedata when we connect. We always sync our game
+// to this data.
 socket.on('game', handleGameData);
+
+// The server emits diff with a diff whenever there are changes
 socket.on('diff', handleDiff);
 
-socket.on('badname', handleBadName);
-socket.on('nameSet', handleNameSet);
+// The server emits loggedin with our name when we have succesfully logged in.
+socket.on('loggedIn', handleLoggedIn);
 
-socket.on('connect', function () {
-	console.log('connected.');
-});
-
-function setName(name) {
-	var badname = document.getElementById('badname');
-	badname.textContent = '';
-
-	socket.emit('setName', name);
+function login(name, catType, propType, pos) {
+	// Send our login information to the server.
+	socket.emit('login', name, catType, propType, pos);
 }
 
 function contentLoaded() {
-	var ulCatTypes = document.getElementById('catTypes');
-	ulCatTypes.addEventListener('mouseup', function (e) {
-		console.log(e.target);
-	});
+	// The page has loaded completely, we can start our game.
+	catSelect = require('./catselect').CatSelect();
+	
+	catSelect.on('login', login);
+	
+	// If our name is taken the server emits badname.
+	socket.on('badname', catSelect.showBadName);
 
-	var name = document.getElementById('name');
-	name.focus();
-
-	name.addEventListener('keydown', function (e) {
-		if (e.keyCode === 13) {
-			setName(e.target.value);
-		}
-	});
-
-	var setNameButton = document.getElementById('setName');
-
-	setNameButton.addEventListener('click', function (e) {
-		var name = document.getElementById('name');
-		setName(name.value);
-
-		e.preventDefault();
-		e.stopPropagation();
-	}, false);
-
-	canvas = document.getElementById('canvas');
-	context = canvas.getContext('2d');
-
-	window.addEventListener('mouseup', handleWindowMouseUp);
-
-	if (debug) {
-		window.addEventListener('mousemove', handleWindowMouseMove);
-	}
-
-	window.addEventListener('resize', resizeCanvas, false);
-	resizeCanvas();
-
-	sprite = new Image();
-	sprite.src = '/images/c1.png';
-
-	animate();
+	// Listen for clicks on the playground.
+	var playground = document.getElementById('playground');
+	playground.addEventListener('mouseup', handlePlaygroundMouseUp);
 }
 
+// Listen for the page to indicate that it's ready.
 document.addEventListener("DOMContentLoaded", contentLoaded);

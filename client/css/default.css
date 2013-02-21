@@ -6,12 +6,13 @@ html,body {
   font-family: sans-serif;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 a {
   text-decoration: none;
   color: rgba(0,0,0,1);
 }
-#badname {
+#loginError {
   color: #c33;
 }
 #Welcome {
@@ -25,7 +26,7 @@ a {
   box-shadow: 5px 5px 10px #555;
   top: 40px;
   left: 40px;
-  z-index: 3
+  z-index: 20;
 }
 #blocker {
   background-color: #000;
@@ -35,28 +36,172 @@ a {
   top: 0;
   left: 0;
   opacity: 0.5;
-  z-index: 2;
+  z-index: 10;
 }
 #blocker div {
   position: absolute;
 }
-#canvas {
+#playground {
+  position: absolute;
+  top: 0;
+  bottom: 32px;
   background-color: #d4f1b3;
-  display: block;
   z-index: 1;
   background-image: url('/images/grass.png');
+  display: block;
+  width: 100%;
 }
+
+div.catainer {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  -webkit-transition: -webkit-transform 1s, opacity 1s;
+  -moz-transition: -moz-transform 1s, opacity 1s;
+}
+
+div.cat {
+  position: absolute;
+  width: 100px;
+  height: 91px;
+  margin-left: -50px;
+  margin-top: -45px;
+  z-index: 2;
+}
+
+div.prop {
+  position: absolute;
+  width: 100px;
+  height: 91px;
+  margin-left: -50px;
+  margin-top: -45px;
+  z-index: 3;
+}
+
+div.nametag {
+  position: absolute;
+  top: -55px;
+  font-weight: bold;
+  font-size: 12px;
+  -webkit-transform: translateX(-50%);
+  -moz-transform: translateX(-50%);
+  min-width: 300px;
+  text-align: center;
+}
+
+div.chatList {
+  position: absolute;
+  bottom: 45px;
+  margin-left: -50px;
+  min-width: 300px;
+  font-size: 16px;
+}
+
+div.chatList div {
+  background: #fff;
+  border: 2px solid #000;
+  margin: 4px;
+  padding: 4px;
+  -webkit-transition: opacity 1s;
+  -moz-transition: opacity 1s;
+  opacity: 0;
+  border-radius: 9.3px;
+}
+
 ul {
   list-style-type: none;
-  display: none;
 }
+
 li {
   float: left;
+  margin: 4px;
+  width: 100px;
+  height: 100px;
 }
+
+li img {
+  padding-left: 8px;
+  padding-bottom: 6px;
+}
+
+#catTypes img:hover, #propTypes img:hover{
+  background-color: #d4f1b3;
+  box-shadow: inset 3px 3px 10px #bd9;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#propTypes, #nameDiv {
+  display: none;
+}
+
 #chat {
   display: block;
   border: 0;
-  padding: 5px;
   font-family: sans-serif;
   font-size: 16px;
+  height: 32px;
+  bottom: 0;
+  position: absolute;
+  width: 100%;
+  padding-left: 4px;
+  z-index: 5;
+}
+
+#propTypes img {
+  background-position: 8px 0px;
+  background-repeat: no-repeat;
+}
+
+.c1 img {
+  background-image: url('/images/c1.png');
+}
+
+.c2 img {
+  background-image: url('/images/c2.png');
+}
+
+.c3 img {
+  background-image: url('/images/c3.png');
+}
+
+.c4 img {
+  background-image: url('/images/c4.png');
+}
+
+.c5 img {
+  background-image: url('/images/c5.png');
+}
+
+.c6 img {
+  background-image: url('/images/c6.png');
+}
+
+.c7 img {
+  background-image: url('/images/c7.png');
+}
+
+.c8 img {
+  background-image: url('/images/c8.png');
+}
+
+.c9 img {
+  background-image: url('/images/c9.png');
+}
+
+.c10 img {
+  background-image: url('/images/c10.png');
+}
+
+#yourCat {
+  height: 100px;
+  width: 91px;
+}
+
+#startOver {
+  position: relative;
+  text-align: right;
+  margin-right: 10px;
+  cursor: pointer;
 }
