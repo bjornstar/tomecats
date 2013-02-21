@@ -138,8 +138,10 @@ function setChatExpire() {
 	setTimeout(function () {
 		// Shift the chat message off the front of the array, the magic of
 		// of tomes updates all our clients.
-
-		that.shift();
+		var catName = that.getParent().getKey();
+		if (cats.hasOwnProperty(catName)) {
+			that.shift();
+		}
 	}, chatDuration);
 }
 
@@ -259,6 +261,11 @@ catsExpress.get('/css/:css', function (req, res) {
 catsExpress.get('/images/:image', function (req, res) {
 	var image = req.params.image;
 	res.sendfile('./client/images/' + image);
+});
+
+catsExpress.get('/audio/:audio', function (req, res) {
+	var audio = req.params.audio;
+	res.sendfile('./client/audio/' + audio);
 });
 
 // This starts our express web server listening on either a port or a socket.

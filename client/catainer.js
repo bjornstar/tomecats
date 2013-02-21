@@ -126,6 +126,17 @@ Catainer.prototype.destroy = function () {
 };
 
 Catainer.prototype.chat = function (chatText) {
+	var catSoundTypes = [ { prefix: 'a', size: 5 }, { prefix: 'b', size: 3 }, { prefix: 'c', size: 5 } ];
+	var catSoundBank = catSoundTypes[this.cat.catType.valueOf()[1] % 3];
+	
+	var rndAudioId = catSoundBank.prefix + (Math.floor(Math.random() * catSoundBank.size) + 1);
+
+	var audio = document.getElementById(rndAudioId);
+	
+	if (audio) {
+		audio.play();
+	}
+
 	// Create a new chat bubble.
 	var newChat = document.createElement('div');
 	newChat.textContent = chatText;

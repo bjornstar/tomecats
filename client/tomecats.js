@@ -131,6 +131,9 @@ function handleLoggedIn(name) {
 
 	// Setup the chat box event handlers.
 	setupChatHooks();
+
+	var bgm = document.getElementById('bgm');
+	bgm.play();
 }
 
 function addCat(name) {
