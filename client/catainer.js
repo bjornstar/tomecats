@@ -116,12 +116,15 @@ Catainer.prototype.destroy = function () {
 	var playground = this.playground;
 
 	// and when the opacity reaches 0 we remove the cat from the playground.
-	cnt.addEventListener('transitionEnd', function () {
+	cnt.addEventListener('transitionEnd', function (e) {
 		playground.removeChild(cnt);
+		e.stopPropagation();
 	});
 
-	cnt.addEventListener('webkitTransitionEnd', function () {
+	cnt.addEventListener('webkitTransitionEnd', function (e) {
+		console.log('webkitTransitionEnd', e);
 		playground.removeChild(cnt);
+		e.stopPropagation();
 	});
 };
 
@@ -161,12 +164,14 @@ Catainer.prototype.destroyChat = function(newChat) {
 	newChat.style.opacity = 0;
 
 	// And when the fade out is done, we remove the chat bubble.
-	newChat.addEventListener('transitionEnd', function () {
+	newChat.addEventListener('transitionEnd', function (e) {
 		chatList.removeChild(newChat);
+		e.stopPropagation();
 	});
 
-	newChat.addEventListener('webkitTransitionEnd', function () {
+	newChat.addEventListener('webkitTransitionEnd', function (e) {
 		chatList.removeChild(newChat);
+		e.stopPropagation();
 	});
 };
 
