@@ -15,7 +15,8 @@
         "express": "*",
         "socket.io": "*",
         "tomes": "*",
-        "component-builder": "*"
+        "component-builder": "*",
+        "component"
     },
     "license": {
         "type": "MIT",
