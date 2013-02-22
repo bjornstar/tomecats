@@ -29,12 +29,6 @@
 
 var EventEmitter = require('emitter');
 
-function inherits(Child, Parent) {
-	Child.prototype = Object.create(Parent.prototype, {
-		constructor: { value: Child, enumerable: false, writable: true, configurable: true }
-	});
-}
-
 exports = module.exports = new EventEmitter();
 
 exports.CatSelect = function () {

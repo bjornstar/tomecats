@@ -31,7 +31,7 @@ function Catainer(cat) {
 
 	var name = cat.getKey();
 
-	var cnt = this.cnt = document.createElement('div');
+	var cnt = this.rootElement = document.createElement('div');
 	cnt.className = 'catainer';
 	cnt.style.transform = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
 	cnt.style.webkitTransform = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
@@ -71,12 +71,6 @@ function Catainer(cat) {
 	cnt.appendChild(nametag);
 	cnt.appendChild(chatList);
 
-	// Finally, put the catainer onto the playground with the other cats.
-
-	var playground = this.playground = document.getElementById('playground');
-	playground.appendChild(cnt);
-
-
 	// We want the cat to fade in. The default opacity of a catainer is 0, we
 	// use setTimeout to trigger a transition.
 
@@ -91,9 +85,9 @@ Catainer.prototype.move = function () {
 
 	// We apply movement transforms to the whole catainer so that
 	// everything moves together.
-
-	this.cnt.style.transform = movement;
-	this.cnt.style.webkitTransform = movement;
+console.log('movig');
+	this.rootElement.style.transform = movement;
+	this.rootElement.style.webkitTransform = movement;
 
 	// We want to be able to flip the cat left and right, but not the text
 	// so we only apply the direction changes to the cat.
@@ -110,7 +104,7 @@ Catainer.prototype.move = function () {
 
 Catainer.prototype.destroy = function () {
 	// We fade out the cat by setting the opacity to 0.
-	var cnt = this.cnt;
+	var cnt = this.rootElement;
 	cnt.style.opacity = 0;
 
 	var playground = this.playground;

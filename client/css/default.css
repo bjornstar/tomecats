@@ -41,7 +41,7 @@ a {
 #blocker div {
   position: absolute;
 }
-#playground {
+.view {
   position: absolute;
   top: 0;
   bottom: 32px;
@@ -132,7 +132,7 @@ li img {
   cursor: pointer;
 }
 
-#propTypes, #nameDiv {
+#propTypes, #nameDiv, #audio {
   display: none;
 }
 

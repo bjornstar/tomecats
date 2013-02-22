@@ -34,10 +34,10 @@ var Catainer = require('./catainer').Catainer;
 var socket = io.connect();
 
 // These are our global variables for the game.
-var cats, me, merging, catSelect;
+var cats, me, merging, catSelect, view;
 
 // This is our click handler.
-function handlePlaygroundMouseUp(event) {
+function handleMouseUp(event) {
 	// Do you have a cat yet?
 	if (!me) {
 		return;
@@ -47,7 +47,7 @@ function handlePlaygroundMouseUp(event) {
 	var newX = event.pageX;
 
 	// Don't go over the chat box.
-	var newY = Math.min(event.pageY, this.clientHeight - 75);
+	var newY = event.pageY;
 
 	// Are you moving left or right?
 	var newD = 'r';
@@ -143,6 +143,9 @@ function addCat(name) {
 	// and everything will move together.
 
 	var myCatainer = new Catainer(cat);
+	view.add(myCatainer.rootElement);
+
+	view.on('mouseup', handleMouseUp);
 
 	// Now comes the fun part: wiring up the cat's changes.
 
@@ -241,9 +244,16 @@ function contentLoaded() {
 	// If our name is taken the server emits badname.
 	socket.on('badname', catSelect.showBadName);
 
-	// Listen for clicks on the playground.
-	var playground = document.getElementById('playground');
-	playground.addEventListener('mouseup', handlePlaygroundMouseUp);
+	// Look at our URL and see if we want CSS or Canvas
+	if (window.location.href.match(/#canvas/i)) {
+		var CanvasView = require('./canvasView').CanvasView;
+		view = new CanvasView();
+	} else {
+		var CssView = require('./cssView').CssView;
+		view = new CssView();
+	}
+
+	window.scrollTo(0,1);
 }
 
 // Listen for the page to indicate that it's ready.

@@ -127,22 +127,26 @@ function sendDiffToAll() {
 	}
 }
 
-// When cats change, sned the diff to all clients.
+// When cats change, send the diff to all clients.
 cats.on('readable', sendDiffToAll);
 
 // We want our chat message to expire after a certain amount of time so that we
-// don't them clogging up our tubes.
+// don't have them clogging up our tubes.
 function setChatExpire() {
 	var that = this;
 	
-	setTimeout(function () {
+	var chatExpire = setTimeout(function () {
 		// Shift the chat message off the front of the array, the magic of
 		// of tomes updates all our clients.
-		var catName = that.getParent().getKey();
-		if (cats.hasOwnProperty(catName)) {
-			that.shift();
-		}
+		that.shift();
 	}, chatDuration);
+
+	// It's possible that our cat disconnects before the chat expires. In that
+	// case, clear the timeout so we are not modifying destroyed tomes.
+
+	this.on('destroy', function () {
+		clearTimeout(chatExpire);
+	});
 }
 
 function handleLogin(name, catType, propType, pos) {
