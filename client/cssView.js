@@ -19,21 +19,15 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-//  _____                       ___      _
-// /__   \___  _ __ ___   ___  / __\__ _| |_ ___
-//   / /\/ _ \| '_ ` _ \ / _ \/ /  / _` | __/ __|
-//  / / | (_) | | | | | |  __/ /__| (_| | |_\__ \
-//  \/   \___/|_| |_| |_|\___\____/\__,_|\__|___/
+//                     _
+//   ___ ___ ___/\   /(_) _____      __
+//  / __/ __/ __\ \ / / |/ _ \ \ /\ / /
+// | (__\__ \__ \\ V /| |  __/\ V  V /
+//  \___|___/___/ \_/ |_|\___| \_/\_/
 //
 
-
 var EventEmitter = require('emitter');
-
-function inherits(Child, Parent) {
-	Child.prototype = Object.create(Parent.prototype, {
-		constructor: { value: Child, enumerable: false, writable: true, configurable: true }
-	});
-}
+var inherits = require('inherit');
 
 function CssView(id, map, ref) {
 	EventEmitter.call(this);
@@ -52,8 +46,10 @@ function CssView(id, map, ref) {
 	}
 
 	var that = this;
-	view.addEventListener('mouseup', function(e) {
-		that.emit('mouseup', e);
+	view.addEventListener('mouseup', function(event) {
+		var newX = event.pageX;
+		var newY = event.pageY;
+		that.emit('newCoords', newX, newY);
 	});
 }
 

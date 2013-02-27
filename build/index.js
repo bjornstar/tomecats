@@ -6,6 +6,7 @@ var mkdir   = fs.mkdirSync;
 module.exports = function(req, res, next) {
 	var builder = new Builder('.');
 	builder.copyAssetsTo('public');
+	builder.addLookup('node_modules');
 	builder.build(function (err, res) {
 		if (err) return next(err);
 		if (!fs.existsSync('public')) {
@@ -15,3 +16,5 @@ module.exports = function(req, res, next) {
 		next();
 	});
 };
+
+$dir.component('.');

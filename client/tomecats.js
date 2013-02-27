@@ -37,17 +37,11 @@ var socket = io.connect();
 var cats, me, merging, catSelect, view;
 
 // This is our click handler.
-function handleMouseUp(event) {
+function handleNewCoords(newX, newY) {
 	// Do you have a cat yet?
 	if (!me) {
 		return;
 	}
-
-	// Get mouse coords
-	var newX = event.pageX;
-
-	// Don't go over the chat box.
-	var newY = event.pageY;
 
 	// Are you moving left or right?
 	var newD = 'r';
@@ -144,8 +138,6 @@ function addCat(name) {
 
 	var myCatainer = new Catainer(cat);
 	view.add(myCatainer.rootElement);
-
-	view.on('mouseup', handleMouseUp);
 
 	// Now comes the fun part: wiring up the cat's changes.
 
@@ -252,6 +244,8 @@ function contentLoaded() {
 		var CssView = require('./cssView').CssView;
 		view = new CssView();
 	}
+
+	view.on('newCoords', handleNewCoords);
 
 	window.scrollTo(0,1);
 }

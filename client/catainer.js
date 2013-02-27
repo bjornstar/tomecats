@@ -65,7 +65,6 @@ function Catainer(cat) {
 
 	// Stick them all into the 'catainer'
 
-	
 	cnt.appendChild(div);
 	cnt.appendChild(prop);
 	cnt.appendChild(nametag);
@@ -85,7 +84,7 @@ Catainer.prototype.move = function () {
 
 	// We apply movement transforms to the whole catainer so that
 	// everything moves together.
-console.log('movig');
+
 	this.rootElement.style.transform = movement;
 	this.rootElement.style.webkitTransform = movement;
 

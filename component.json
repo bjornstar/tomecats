@@ -4,10 +4,16 @@
   "version": "0.0.6",
   "dependencies": {
     "component/raf": "*",
-    "bjornstar/tomes": "*",
     "component/tween": "*",
-    "component/emitter": "*"
+    "component/emitter": "*",
+    "component/inherit": "*"
   },
+  "local": [
+    "tomes"
+  ],
+  "paths": [
+    "node_modules"
+  ],
   "scripts": [
     "client/tomecats.js",
     "client/catselect.js",

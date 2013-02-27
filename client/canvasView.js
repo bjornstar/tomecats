@@ -19,17 +19,21 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-//  _____                       ___      _
-// /__   \___  _ __ ___   ___  / __\__ _| |_ ___
-//   / /\/ _ \| '_ ` _ \ / _ \/ /  / _` | __/ __|
-//  / / | (_) | | | | | |  __/ /__| (_| | |_\__ \
-//  \/   \___/|_| |_| |_|\___\____/\__,_|\__|___/
+//                                      _
+//   ___ __ _ _ ____   ____ _ ___/\   /(_) _____      __
+//  / __/ _` | '_ \ \ / / _` / __\ \ / / |/ _ \ \ /\ / /
+// | (_| (_| | | | \ V / (_| \__ \\ V /| |  __/\ V  V /
+//  \___\__,_|_| |_|\_/ \__,_|___/ \_/ |_|\___| \_/\_/
 //
 
+var EventEmitter = require('emitter');
+var inherits = require('inherit');
 var raf = require('raf');
 var Tween = require('tween');
 
 function CanvasView(id, map, ref) {
+	EventEmitter.call(this);
+
 	this.id = id;
 	this.map = map;
 	this.ref = ref;
@@ -46,6 +50,8 @@ function CanvasView(id, map, ref) {
 	window.addEventListener('resize', this.resizeCanvas, false);
 	this.resizeCanvas();
 }
+
+inherits(CanvasView, EventEmitter);
 
 CanvasView.prototype.resizeCanvas = function() {
 	var canvas = this.view;
