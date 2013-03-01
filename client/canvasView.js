@@ -31,73 +31,116 @@ var inherits = require('inherit');
 var raf = require('raf');
 var Tween = require('tween');
 
-function CanvasView(id, map, ref) {
+var id = 0;
+var sprite = { width: 100, height: 91 };
+
+function half(n) {
+	return Math.floor(n / 2);
+}
+
+function update(view) {
+
+}
+
+function draw(view) {
+	var canvas = view.canvas;
+	var context = canvas.getContext('2d');
+
+	context.clearRect(0, 0, canvas.width, canvas.height);
+
+	for (var name in view.cats) {
+		var cat = view.cats[name].pos;
+
+		var x = cat.x - half(sprite.width) - view.offset.x;
+		var y = cat.y - half(sprite.height) - view.offset.y;
+
+		context.save();
+		context.translate(x, y);
+
+		context.font = 'bold 8pt sans-serif';
+		context.textAlign = 'center';
+		context.fillText(name, half(sprite.height), sprite.height + 12);
+
+		context.restore();
+	}
+}
+
+function updateOffset(view) {
+	var meX = view.ref ? view.ref.t.x : 0;
+	var meY = view.ref ? view.ref.t.y : 0;
+
+	view.offset.x = Math.min(Math.max(meX - view.halfCanvasW, 0), Math.max(view.map.width - view.canvas.width, 0));
+	view.offset.y = Math.min(Math.max(meY - view.halfCanvasH, 0), Math.max(view.map.height - view.canvas.height, 0));
+}
+
+function resizeCanvas(view) {
+	var canvas = view.canvas;
+	
+	canvas.width = Math.min(view.map.width, window.innerWidth);
+	canvas.height = Math.min(view.map.height, window.innerHeight);
+
+	view.halfCanvasW = half(canvas.width);
+	view.halfCanvasH = half(canvas.height);
+
+	updateOffset(view);
+	draw(view);
+}
+
+function start(view) {
+	function animate() {
+		raf(animate);
+
+		update(view);
+
+		draw(view);
+	}
+	animate();
+}
+
+function CanvasView(map, ref) {
 	EventEmitter.call(this);
 
-	this.id = id;
-	this.map = map;
+	this.id = 'canvasview' + id;
+	this.map = map || { width: 1000, height: 400 };
 	this.ref = ref;
 	this.offset = { x: 0, y: 0 };
+	this.cats = {};
 
-	var view = this.view = document.createElement('CANVAS');
-	view.className = 'view';
-	view.id = id;
+	var canvas = this.canvas = document.createElement('CANVAS');
+	canvas.className = 'view';
+	canvas.id = this.id;
 
-	if (!document.getElementById(view.id)) {
-		document.body.appendChild(view);
-	}
+	id += 1;
 
-	window.addEventListener('resize', this.resizeCanvas, false);
-	this.resizeCanvas();
+	this.halfCanvasW = half(canvas.width);
+	this.halfCanvasH = half(canvas.height);
+
+	document.body.appendChild(canvas);
+
+	resizeCanvas(this);
+
+	var that = this;
+
+	window.addEventListener('resize', function () {
+		resizeCanvas(that);
+	}, false);
+
+	start(this);
 }
 
 inherits(CanvasView, EventEmitter);
 
-CanvasView.prototype.resizeCanvas = function() {
-	var canvas = this.view;
-	
-	canvas.width = window.innerWidth;
-	canvas.height = Math.min(map.height, window.innerHeight - chat.clientHeight - 10);
+CanvasView.prototype.add = function (cat) {
+	var name = cat.getKey();
+	this.cats[name] = cat;
 
-	this.updateOffset();
-
-	this.draw();
+	cat.on('destroy', function () {
+		delete this.cats[name];
+	});
 };
 
-
-CanvasView.prototype.draw = function() {
-	var canvas = this.canvas;
-	var context = this.canvas.getContext('2d');
-
-	context.clearRect(0, 0, canvas.width, canvas.height);
-};
-
-CanvasView.prototype.animate = function() {
-	raf(animate);
-
-	if (!cCats) {
-		return;
-	}
-
-	update();
-
-	var catsVersion = cCats.getVersion();
-
-	if (lastCats === catsVersion) {
-		return;
-	}
-
-	draw();
-
-	lastCats = catsVersion;
-};
-
-CanvasView.prototype.updateOffset = function() {
-	var meX = cMe ? cMe.t.x : 0;
-	var meY = cMe ? cMe.t.y : 0;
-
-	this.offset.x = Math.min(Math.max(meX - halfCanvasW, 0), Math.max(map.width - canvas.width, 0));
-	this.offset.y = Math.min(Math.max(meY - halfCanvasH, 0), Math.max(map.height - canvas.height, 0));
+CanvasView.prototype.setRef = function (ref) {
+	this.ref = ref;
 };
 
 exports.CanvasView = CanvasView;

@@ -28,7 +28,6 @@
 
 // We can require Tomes thanks to component.
 var Tome = require('tomes').Tome;
-var Catainer = require('./catainer').Catainer;
 
 // We include socket.io on the page.
 var socket = io.connect();
@@ -125,6 +124,8 @@ function handleLoggedIn(name) {
 
 	// Setup the chat box event handlers.
 	setupChatHooks();
+
+	view.setRef(me);
 }
 
 function addCat(name) {
@@ -132,43 +133,9 @@ function addCat(name) {
 
 	var cat = cats[name];
 
-	// Create a container for the cat (a catainer), this holds the cat, props,
-	// nametag, and chat bubbles. We do this so we can just move the catainer
-	// and everything will move together.
-
-	var myCatainer = new Catainer(cat);
-	view.add(myCatainer.rootElement);
-
-	// Now comes the fun part: wiring up the cat's changes.
-
-	// When the cat's position changes, we want to animate it into position.
-
-	cat.pos.on('readable', function() {
-		myCatainer.move();
-	});
-
-	// When a user logs out, the server deletes the cat. We want to fade out
-	// the cat so we listen for the destroy event.
-
-	cat.on('destroy', function() {
-		myCatainer.destroy();
-	});
-
-	// When some text gets added to a cat's chat we want to display it.
-	
-	cat.chat.on('add', function (index) {
-		var chatText = this[index];
-		
-		var chatDiv = myCatainer.chat(chatText);
-
-		// The server takes care of cleaning up chat messages after a certain
-		// period of time. All we need to do is listen for it to be destroyed
-		// and remove the chat bubble.
-		
-		chatText.on('destroy', function () {
-			myCatainer.destroyChat(chatDiv);
-		});
-	});
+	// Add the cat to the view, the views are responsible for hooking up
+	// events.
+	view.add(cat);
 }
 
 function handleGameData(data) {

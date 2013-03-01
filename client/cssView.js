@@ -28,11 +28,14 @@
 
 var EventEmitter = require('emitter');
 var inherits = require('inherit');
+var Catainer = require('./catainer').Catainer;
 
-function CssView(id, map, ref) {
+var id = 0;
+
+function CssView(map, ref) {
 	EventEmitter.call(this);
 
-	this.id = id;
+	this.id = 'cssview' + id;
 	this.map = map;
 	this.ref = ref;
 	this.offset = { x: 0, y: 0 };
@@ -40,6 +43,8 @@ function CssView(id, map, ref) {
 	var view = this.view = document.createElement('DIV');
 	view.className = 'view';
 	view.id = id;
+
+	id += 1;
 
 	if (!document.getElementById(view.id)) {
 		document.body.appendChild(view);
@@ -55,12 +60,41 @@ function CssView(id, map, ref) {
 
 inherits(CssView, EventEmitter);
 
-CssView.prototype.add = function (element) {
+CssView.prototype.add = function (cat) {
+	var myCatainer = new Catainer(cat);
+
+	var element = myCatainer.rootElement;
 	this.view.appendChild(element);
+
+	cat.pos.on('readable', function () {
+		myCatainer.update();
+	});
+
+	cat.on('destroy', function () {
+		myCatainer.destroy();
+	});
+
+	cat.chat.on('add', function (index) {
+		var chatText = this[index];
+		
+		var chatDiv = myCatainer.chat(chatText);
+
+		// The server takes care of cleaning up chat messages after a certain
+		// period of time. All we need to do is listen for it to be destroyed
+		// and remove the chat bubble.
+		
+		chatText.on('destroy', function () {
+			myCatainer.destroyChat(chatDiv);
+		});
+	});
 };
 
 CssView.prototype.remove = function (element) {
 	this.view.removeChild(element);
+};
+
+CssView.prototype.setRef = function (ref) {
+	this.ref = ref;
 };
 
 exports.CssView = CssView;

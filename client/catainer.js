@@ -78,7 +78,7 @@ function Catainer(cat) {
 	}, 0);
 }
 
-Catainer.prototype.move = function () {
+Catainer.prototype.update = function () {
 	var movement = 'translate(' + this.cat.pos.x + 'px, ' + this.cat.pos.y + 'px)';
 	var direction = 'scaleX(' + (this.cat.pos.d == 'l' ? -1 : 1) + ')';
 
@@ -115,7 +115,6 @@ Catainer.prototype.destroy = function () {
 	});
 
 	cnt.addEventListener('webkitTransitionEnd', function (e) {
-		console.log('webkitTransitionEnd', e);
 		playground.removeChild(cnt);
 		e.stopPropagation();
 	});
