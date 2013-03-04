@@ -93,18 +93,21 @@ Catainer.prototype.update = function () {
 
 	this.rootElement.style.transform = movement;
 	this.rootElement.style.webkitTransform = movement;
+	this.rootElement.style.msTransform = movement;
 
 	// We want to be able to flip the cat left and right, but not the text
 	// so we only apply the direction changes to the cat.
 
 	this.div.style.transform = direction;
 	this.div.style.webkitTransform = direction;
+	this.div.style.msTransform = direction;
 
 	// And of course we want the cat's props to stay on the cat so we flip
 	// them too.
 
 	this.prop.style.transform = direction;
 	this.prop.style.webkitTransform = direction;
+	this.prop.style.msTransform = direction;
 };
 
 Catainer.prototype.destroy = function () {
