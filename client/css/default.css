@@ -59,6 +59,7 @@ div.catainer {
   opacity: 0;
   -webkit-transition: -webkit-transform 1s, opacity 1s;
   -moz-transition: -moz-transform 1s, opacity 1s;
+  -ms-transition: -ms-transform 1s, opacity 1s;
 }
 
 div.cat {
@@ -86,6 +87,7 @@ div.nametag {
   font-size: 12px;
   -webkit-transform: translateX(-50%);
   -moz-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
   min-width: 300px;
   text-align: center;
 }
@@ -105,6 +107,7 @@ div.chatList div {
   padding: 4px;
   -webkit-transition: opacity 1s;
   -moz-transition: opacity 1s;
+  -ms-transition: opacity 1s;
   opacity: 0;
   border-radius: 9.3px;
 }
