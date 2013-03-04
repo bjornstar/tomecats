@@ -24,33 +24,39 @@
 //  / /  / _` | __/ _` | | '_ \ / _ \ '__|
 // / /__| (_| | || (_| | | | | |  __/ |
 // \____/\__,_|\__\__,_|_|_| |_|\___|_|
-// 
+//
 
 function Catainer(cat) {
 	this.cat = cat;
+
+	var position = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
+	var direction = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
 
 	var name = cat.getKey();
 
 	var cnt = this.cnt = document.createElement('div');
 	cnt.className = 'catainer';
-	cnt.style.transform = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
-	cnt.style.webkitTransform = 'translate(' + cat.pos.x + 'px, ' + cat.pos.y + 'px)';
+	cnt.style.transform = position;
+	cnt.style.webkitTransform = position;
+	cnt.style.msTransform = position;
 
 	// Create the cat.
 
 	var div = this.div = document.createElement('div');
 	div.className = 'cat';
 	div.style.backgroundImage = 'url(/images/' + cat.catType + '.png)';
-	div.style.transform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
-	div.style.webkitTransform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
+	div.style.transform = direction;
+	div.style.webkitTransform = direction;
+	div.style.msTransform = direction;
 
 	// Now create the cat props.
 
 	var prop = this.prop = document.createElement('div');
 	prop.className = 'prop';
 	prop.style.backgroundImage = 'url(/images/' + cat.propType + '.png)';
-	prop.style.transform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
-	prop.style.webkitTransform = 'scaleX(' + (cat.pos.d == 'l' ? -1 : 1) + ')';
+	prop.style.transform = direction;
+	prop.style.webkitTransform = direction;
+	prop.style.msTransform = direction;
 
 	// And create the nametag.
 
@@ -65,7 +71,7 @@ function Catainer(cat) {
 
 	// Stick them all into the 'catainer'
 
-	
+
 	cnt.appendChild(div);
 	cnt.appendChild(prop);
 	cnt.appendChild(nametag);
@@ -94,18 +100,21 @@ Catainer.prototype.move = function () {
 
 	this.cnt.style.transform = movement;
 	this.cnt.style.webkitTransform = movement;
+	this.cnt.style.msTransform = movement;
 
 	// We want to be able to flip the cat left and right, but not the text
 	// so we only apply the direction changes to the cat.
 
 	this.div.style.transform = direction;
 	this.div.style.webkitTransform = direction;
+	this.div.style.msTransform = direction;
 
 	// And of course we want the cat's props to stay on the cat so we flip
 	// them too.
 
 	this.prop.style.transform = direction;
 	this.prop.style.webkitTransform = direction;
+	this.prop.style.msTransform = direction;
 };
 
 Catainer.prototype.destroy = function () {
@@ -131,11 +140,11 @@ Catainer.prototype.destroy = function () {
 Catainer.prototype.chat = function (chatText) {
 	var catSoundTypes = [ { prefix: 'a', size: 5 }, { prefix: 'b', size: 3 }, { prefix: 'c', size: 5 } ];
 	var catSoundBank = catSoundTypes[this.cat.catType.valueOf()[1] % 3];
-	
+
 	var rndAudioId = catSoundBank.prefix + (Math.floor(Math.random() * catSoundBank.size) + 1);
 
 	var audio = document.getElementById(rndAudioId);
-	
+
 	if (audio) {
 		audio.play();
 	}
