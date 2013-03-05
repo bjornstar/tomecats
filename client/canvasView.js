@@ -33,6 +33,7 @@ var Tween = require('tween');
 
 var id = 0;
 var sprite = { width: 100, height: 91 };
+var loadedSprites = {};
 
 function half(n) {
 	return Math.floor(n / 2);
@@ -42,6 +43,23 @@ function update(view) {
 
 }
 
+function drawChats(ctx, chats) {
+	ctx.font = '16px sans-serif';
+	ctx.textAlign = 'left';
+
+	for (var i = 0, len = chats.length; i < len; i += 1) {
+		var chat = chats[i];
+		var chatW = ctx.measureText(chat).width;
+
+		ctx.fillStyle = '#fff';
+		ctx.fillRect(-5, 20 - (len - i) * 20, chatW + 10, -26);
+		ctx.lineWidth = 2;
+		ctx.strokeRect(-5, 20 - (len - i) * 20, chatW + 10, -26);
+		ctx.fillStyle = '#000';
+		ctx.fillText(chat, 0, 13 - (len - i) * 20);
+	}
+}
+
 function draw(view) {
 	var canvas = view.canvas;
 	var context = canvas.getContext('2d');
@@ -49,25 +67,48 @@ function draw(view) {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
 	for (var name in view.cats) {
-		var cat = view.cats[name].pos;
+		var cat = view.cats[name];
+		var pos = cat.pos;
+		var chat = cat.chat;
 
-		var x = cat.x - half(sprite.width) - view.offset.x;
-		var y = cat.y - half(sprite.height) - view.offset.y;
+		var x = pos.x - half(sprite.width) - view.offset.x;
+		var y = pos.y - half(sprite.height) - view.offset.y;
 
 		context.save();
 		context.translate(x, y);
 
 		context.font = 'bold 8pt sans-serif';
 		context.textAlign = 'center';
-		context.fillText(name, half(sprite.height), sprite.height + 12);
+		context.fillText(name, half(sprite.height), -6);
+
+		// set cat flip
+		if (pos.d == 'l') {
+			context.translate(sprite.width, 0);
+			context.scale(-1, 1);
+		}
+
+		context.drawImage(loadedSprites[cat.catType.valueOf()], 0, 0);
+		context.drawImage(loadedSprites[cat.propType.valueOf()], 0, 0);
+
+		// draw chat
+		if (chat && chat.length) {
+
+			// flip back
+			if (pos.d == 'l') {
+				context.scale(-1, 1);
+				context.translate(-sprite.width, 0);
+			}
+
+			drawChats(context, chat);
+		}
 
 		context.restore();
 	}
 }
 
 function updateOffset(view) {
-	var meX = view.ref ? view.ref.t.x : 0;
-	var meY = view.ref ? view.ref.t.y : 0;
+	var meX = view.ref ? view.ref.pos.x : 0;
+	var meY = view.ref ? view.ref.pos.y : 0;
 
 	view.offset.x = Math.min(Math.max(meX - view.halfCanvasW, 0), Math.max(view.map.width - view.canvas.width, 0));
 	view.offset.y = Math.min(Math.max(meY - view.halfCanvasH, 0), Math.max(view.map.height - view.canvas.height, 0));
@@ -101,7 +142,7 @@ function CanvasView(map, ref) {
 	EventEmitter.call(this);
 
 	this.id = 'canvasview' + id;
-	this.map = map || { width: 1000, height: 400 };
+	this.map = map || { width: 2000, height: 400 };
 	this.ref = ref;
 	this.offset = { x: 0, y: 0 };
 	this.cats = {};
@@ -125,7 +166,29 @@ function CanvasView(map, ref) {
 		resizeCanvas(that);
 	}, false);
 
+	canvas.addEventListener('mouseup', function(event) {
+		var eX = event.pageX;
+		var eY = event.pageY;
+
+		var dX = eX + that.offset.x;
+		var dY = eY + that.offset.y;
+
+		var newX = Math.max(Math.min(dX, that.map.width - sprite.width / 2), sprite.width / 2);
+		var newY = Math.max(Math.min(dY, that.map.height - sprite.height / 2 - 18), sprite.width / 2);
+		
+		that.emit('newCoords', newX, newY);
+	});
+
 	start(this);
+}
+
+function loadSprite(spriteName) {
+	if (loadedSprites[spriteName]) {
+		return;
+	}
+
+	loadedSprites[spriteName] = new Image();
+	loadedSprites[spriteName].src = 'images/' + spriteName + '.png';
 }
 
 inherits(CanvasView, EventEmitter);
@@ -134,13 +197,24 @@ CanvasView.prototype.add = function (cat) {
 	var name = cat.getKey();
 	this.cats[name] = cat;
 
+	loadSprite(cat.catType.valueOf());
+	loadSprite(cat.propType.valueOf());
+
+	var that = this;
+	
 	cat.on('destroy', function () {
-		delete this.cats[name];
+		delete that.cats[name];
 	});
 };
 
 CanvasView.prototype.setRef = function (ref) {
 	this.ref = ref;
+
+	var that = this;
+
+	this.ref.pos.on('readable', function () {
+		updateOffset(that);
+	});
 };
 
 exports.CanvasView = CanvasView;

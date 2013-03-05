@@ -49,7 +49,9 @@ a {
   z-index: 1;
   background-image: url('/images/grass.png');
   display: block;
-  width: 100%;
+}
+div.view {
+  width:100%;
 }
 
 div.catainer {
