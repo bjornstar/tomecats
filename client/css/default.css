@@ -86,7 +86,7 @@ div.nametag {
   position: absolute;
   top: -55px;
   font-weight: bold;
-  font-size: 12px;
+  font-size: 8pt;
   -webkit-transform: translateX(-50%);
   -moz-transform: translateX(-50%);
   -ms-transform: translateX(-50%);

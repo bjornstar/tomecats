@@ -79,7 +79,7 @@ function draw(view) {
 
 		context.font = 'bold 8pt sans-serif';
 		context.textAlign = 'center';
-		context.fillText(name, half(sprite.height), -6);
+		context.fillText(name, half(sprite.height), 0);
 
 		// set cat flip
 		if (pos.d == 'l') {
