@@ -6,7 +6,13 @@ var mkdir   = fs.mkdirSync;
 var configFileName = 'config.json';
 var config = {};
 
+var built = false;
+
 module.exports = function(req, res, next) {
+	if (built) {
+		return next();
+	}
+	
 	var builder = new Builder('.');
 	builder.copyAssetsTo('public');
 	builder.addLookup('node_modules');
@@ -30,6 +36,7 @@ module.exports = function(req, res, next) {
 			mkdir('public');
 		}
 		write('public/tomecats.js', res.require + res.js);
+		built = true;
 		next();
 	});
 };
