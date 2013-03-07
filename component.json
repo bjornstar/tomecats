@@ -1,7 +1,7 @@
 {
   "name": "tomecats",
   "description": "I heard you like cats.",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "dependencies": {
     "component/raf": "*",
     "component/tween": "*",
