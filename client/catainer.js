@@ -26,6 +26,18 @@
 // \____/\__,_|\__\__,_|_|_| |_|\___|_|
 //
 
+function transform(what, how) {
+	what.style.transform = how;
+	what.style.webkitTransform = how;
+	what.style.msTransform = how;
+}
+
+function onEnd(what, then) {
+	what.addEventListener('transitionEnd', then);
+	what.addEventListener('webkitTransitionEnd', then);
+	what.addEventListener('msTransitionEnd', then);
+}
+
 function Catainer(cat) {
 	this.cat = cat;
 
@@ -36,27 +48,21 @@ function Catainer(cat) {
 
 	var cnt = this.rootElement = document.createElement('div');
 	cnt.className = 'catainer';
-	cnt.style.transform = position;
-	cnt.style.webkitTransform = position;
-	cnt.style.msTransform = position;
+	transform(cnt, position);
 
 	// Create the cat.
 
 	var div = this.div = document.createElement('div');
 	div.className = 'cat';
 	div.style.backgroundImage = 'url(/images/' + cat.catType + '.png)';
-	div.style.transform = direction;
-	div.style.webkitTransform = direction;
-	div.style.msTransform = direction;
+	transform(div, direction);
 
 	// Now create the cat props.
 
 	var prop = this.prop = document.createElement('div');
 	prop.className = 'prop';
 	prop.style.backgroundImage = 'url(/images/' + cat.propType + '.png)';
-	prop.style.transform = direction;
-	prop.style.webkitTransform = direction;
-	prop.style.msTransform = direction;
+	transform(prop, direction);
 
 	// And create the nametag.
 
@@ -91,23 +97,17 @@ Catainer.prototype.update = function () {
 	// We apply movement transforms to the whole catainer so that
 	// everything moves together.
 
-	this.rootElement.style.transform = movement;
-	this.rootElement.style.webkitTransform = movement;
-	this.rootElement.style.msTransform = movement;
+	transform(this.rootElement, movement);
 
 	// We want to be able to flip the cat left and right, but not the text
 	// so we only apply the direction changes to the cat.
 
-	this.div.style.transform = direction;
-	this.div.style.webkitTransform = direction;
-	this.div.style.msTransform = direction;
+	transform(this.div, direction);
 
 	// And of course we want the cat's props to stay on the cat so we flip
 	// them too.
 
-	this.prop.style.transform = direction;
-	this.prop.style.webkitTransform = direction;
-	this.prop.style.msTransform = direction;
+	transform(this.prop, direction);
 };
 
 Catainer.prototype.destroy = function () {
@@ -115,18 +115,22 @@ Catainer.prototype.destroy = function () {
 	var cnt = this.rootElement;
 	cnt.style.opacity = 0;
 
-	var playground = this.playground;
+	function removeCat(e) {
+		// We might have multiple transitions, the one we want to pay attention
+		// to is the one for opacity.
+
+		if (e.propertyName !== 'opacity') {
+			return;
+		}
+
+		var view = cnt.parentNode;
+		view.removeChild(cnt);
+		
+		e.stopPropagation();
+	}
 
 	// and when the opacity reaches 0 we remove the cat from the playground.
-	cnt.addEventListener('transitionEnd', function (e) {
-		playground.removeChild(cnt);
-		e.stopPropagation();
-	});
-
-	cnt.addEventListener('webkitTransitionEnd', function (e) {
-		playground.removeChild(cnt);
-		e.stopPropagation();
-	});
+	onEnd(cnt, removeCat);
 };
 
 Catainer.prototype.chat = function (chatText) {
@@ -164,16 +168,13 @@ Catainer.prototype.destroyChat = function(newChat) {
 	// Make the chat bubble fade out by setting the opacity to 0.
 	newChat.style.opacity = 0;
 
-	// And when the fade out is done, we remove the chat bubble.
-	newChat.addEventListener('transitionEnd', function (e) {
+	function removeChat(e) {
 		chatList.removeChild(newChat);
 		e.stopPropagation();
-	});
+	}
 
-	newChat.addEventListener('webkitTransitionEnd', function (e) {
-		chatList.removeChild(newChat);
-		e.stopPropagation();
-	});
+	// And when the fade out is done, we remove the chat bubble.
+	onEnd(newChat, removeChat);
 };
 
 exports.Catainer = Catainer;
