@@ -12,3 +12,7 @@ I heard you like cats.
 > node .
 ```
 By default tomecats can be found at http://localhost:3000
+
+tomecats looks for a config.json file in the root directory.
+
+If the config has a "google-analytics" entry, it will use that to track.

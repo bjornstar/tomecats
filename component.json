@@ -6,7 +6,8 @@
     "component/raf": "*",
     "component/tween": "*",
     "component/emitter": "*",
-    "component/inherit": "*"
+    "component/inherit": "*",
+    "code42day/ga": "*"
   },
   "local": [
     "tomes"

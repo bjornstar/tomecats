@@ -215,6 +215,10 @@ function contentLoaded() {
 	view.on('newCoords', handleNewCoords);
 
 	window.scrollTo(0,1);
+
+	if (config && config.hasOwnProperty('google-analytics')) {
+		require('ga')(config['google-analytics']);
+	}
 }
 
 // Listen for the page to indicate that it's ready.
