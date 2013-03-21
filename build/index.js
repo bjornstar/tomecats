@@ -36,7 +36,7 @@ module.exports = function(req, res, next) {
 			mkdir('public');
 		}
 		write('public/tomecats.js', res.require + res.js);
-		built = true;
+		built = false;
 		next();
 	});
 };

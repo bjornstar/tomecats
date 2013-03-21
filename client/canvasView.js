@@ -30,17 +30,30 @@ var EventEmitter = require('emitter');
 var inherits = require('inherit');
 var raf = require('raf');
 var Tween = require('tween');
+var Tome = require('tomes').Tome;
 
 var id = 0;
 var sprite = { width: 100, height: 91 };
 var loadedSprites = {};
+var catTweens = {};
+var chatTweens = {};
 
 function half(n) {
 	return Math.floor(n / 2);
 }
 
-function update(view) {
+function update() {
+	var name;
 
+	for (name in catTweens) {
+		catTweens[name].update();
+	}
+
+	for (name in chatTweens) {
+		chatTweens[name].update();
+	}
+
+	console.log(catTweens);
 }
 
 function drawChats(ctx, chats) {
@@ -67,6 +80,10 @@ function draw(view) {
 	context.clearRect(0, 0, canvas.width, canvas.height);
 
 	for (var name in view.cats) {
+		if (!view.cats.hasOwnProperty(name)) {
+			continue;
+		}
+
 		var cat = view.cats[name];
 		var pos = cat.pos;
 		var chat = cat.chat;
@@ -91,7 +108,7 @@ function draw(view) {
 		context.drawImage(loadedSprites[cat.propType.valueOf()], 0, 0);
 
 		// draw chat
-		if (chat && chat.length) {
+		if (chat.length) {
 
 			// flip back
 			if (pos.d == 'l') {
@@ -138,6 +155,62 @@ function start(view) {
 	animate();
 }
 
+function loadSprite(spriteName) {
+	if (loadedSprites[spriteName]) {
+		return;
+	}
+
+	loadedSprites[spriteName] = new Image();
+	loadedSprites[spriteName].src = 'images/' + spriteName + '.png';
+}
+
+function updateCat(o) {
+	var name = this.name;
+	var view = this.view;
+
+	var catPos = view.cats[name].pos;
+
+	var newX = o.hasOwnProperty('x') ? Math.round(o.x) : catPos.x.valueOf();
+	var newY = o.hasOwnProperty('y') ? Math.round(o.y) : catPos.y.valueOf();
+	var newO = o.hasOwnProperty('o') ? o.o : catPos.o.valueOf();
+	var newD = catPos.d;
+
+	if (newX > catPos.x) {
+		newD = 'r';
+	} else if (newX < catPos.x) {
+		newD = 'l';
+	}
+
+	if (catPos.x.is(newX) && catPos.y.is(newY) && catPos.d.is(newD) && catPos.o.is(newO)) {
+		return;
+	}
+
+	catPos.assign({ x: newX, y: newY, d: newD, o: newO });
+	view.cats.read();
+}
+
+function createCatTween(view, cat) {
+	var name = cat.getKey();
+	console.log('creating tween for', name);
+	var currentPos = view.cats[name].pos;
+
+	var newPos = cat.pos;
+
+	var tween = Tween({ x: currentPos.x.valueOf(), y: currentPos.y.valueOf() })
+		.to({ x: newPos.x.valueOf(), y: newPos.y.valueOf() })
+		.duration(500)
+		.ease('in-out-sine')
+		.update(updateCat);
+	
+	tween.on('end', function () {
+		delete catTweens[name];
+	});
+
+	tween.name = name;
+	tween.view = view;
+	catTweens[name] = tween;
+}
+
 function CanvasView(map, ref) {
 	EventEmitter.call(this);
 
@@ -145,7 +218,7 @@ function CanvasView(map, ref) {
 	this.map = map || { width: 2000, height: 400 };
 	this.ref = ref;
 	this.offset = { x: 0, y: 0 };
-	this.cats = {};
+	this.cats = Tome.conjure({});
 
 	var canvas = this.canvas = document.createElement('CANVAS');
 	canvas.className = 'view';
@@ -174,7 +247,7 @@ function CanvasView(map, ref) {
 		var dY = eY + that.offset.y;
 
 		var newX = Math.max(Math.min(dX, that.map.width - sprite.width / 2), sprite.width / 2);
-		var newY = Math.max(Math.min(dY, that.map.height - sprite.height / 2 - 18), sprite.width / 2);
+		var newY = Math.max(Math.min(dY, that.map.height - sprite.height / 2 + 6), sprite.width / 2);
 		
 		that.emit('newCoords', newX, newY);
 	});
@@ -182,28 +255,25 @@ function CanvasView(map, ref) {
 	start(this);
 }
 
-function loadSprite(spriteName) {
-	if (loadedSprites[spriteName]) {
-		return;
-	}
-
-	loadedSprites[spriteName] = new Image();
-	loadedSprites[spriteName].src = 'images/' + spriteName + '.png';
-}
-
 inherits(CanvasView, EventEmitter);
 
-CanvasView.prototype.add = function (cat) {
+CanvasView.prototype.addCat = function (cat) {
 	var name = cat.getKey();
-	this.cats[name] = cat;
+	this.cats.set(name, cat);
+	this.cats[name].pos.set('o', 1);
 
 	loadSprite(cat.catType.valueOf());
 	loadSprite(cat.propType.valueOf());
 
 	var that = this;
-	
+
+	cat.pos.on('readable', function () {
+		console.log('readable', JSON.stringify(cat));
+		createCatTween(that, cat);
+	});
+
 	cat.on('destroy', function () {
-		delete that.cats[name];
+		that.cats.del(name);
 	});
 };
 

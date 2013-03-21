@@ -30,7 +30,7 @@
 var Tome = require('tomes').Tome;
 
 // We include socket.io on the page.
-var socket = io.connect();
+var socket;
 
 // These are our global variables for the game.
 var cats, me, merging, catSelect, view;
@@ -135,7 +135,7 @@ function addCat(name) {
 
 	// Add the cat to the view, the views are responsible for hooking up
 	// events.
-	view.add(cat);
+	view.addCat(cat);
 }
 
 function handleGameData(data) {
@@ -179,16 +179,6 @@ function handleDiff(diff) {
 	merging = false;
 }
 
-// The server emits game with gamedata when we connect. We always sync our game
-// to this data.
-socket.on('game', handleGameData);
-
-// The server emits diff with a diff whenever there are changes
-socket.on('diff', handleDiff);
-
-// The server emits loggedin with our name when we have succesfully logged in.
-socket.on('loggedIn', handleLoggedIn);
-
 function login(name, catType, propType, pos) {
 	// Send our login information to the server.
 	socket.emit('login', name, catType, propType, pos);
@@ -200,9 +190,6 @@ function contentLoaded() {
 	
 	catSelect.on('login', login);
 	
-	// If our name is taken the server emits badname.
-	socket.on('badname', catSelect.showBadName);
-
 	// Look at our URL and see if we want CSS or Canvas
 	if (window.location.href.match(/#canvas/i)) {
 		var CanvasView = require('./canvasView').CanvasView;
@@ -219,6 +206,21 @@ function contentLoaded() {
 	if (config && config.hasOwnProperty('google-analytics')) {
 		require('ga')(config['google-analytics']);
 	}
+
+	socket = io.connect();
+
+	// The server emits game with gamedata when we connect. We always sync our game
+	// to this data.
+	socket.on('game', handleGameData);
+
+	// The server emits diff with a diff whenever there are changes
+	socket.on('diff', handleDiff);
+
+	// The server emits loggedin with our name when we have succesfully logged in.
+	socket.on('loggedIn', handleLoggedIn);
+
+	// If our name is taken the server emits badname.
+	socket.on('badname', catSelect.showBadName);
 }
 
 // Listen for the page to indicate that it's ready.

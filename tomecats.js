@@ -26,6 +26,47 @@
 //  \/   \___/|_| |_| |_|\___\____/\__,_|\__|___/
 //
 
+var fs = require('fs');
+
+var appName = JSON.parse(fs.readFileSync('package.json').toString()).name;
+var appConfig = {};
+
+try {
+	appConfig = JSON.parse(fs.readFileSync('config.json').toString());
+} catch (e) {
+	console.log(e);
+	console.warn('Could not find config.json');
+}
+
+try {
+	process.env.NEW_RELIC_APP_NAME = appName;
+	process.env.NEW_RELIC_LICENSE_KEY = appConfig.newrelic;
+	process.env.NEW_RELIC_NO_CONFIG_FILE = true;
+	require('newrelic');
+	console.log('using newrelic.');
+} catch (e) {
+	console.log(e);
+	console.warn('Could not start newrelic.');
+}
+
+try {
+	var nodeflyProfile = appConfig.nodefly;
+
+	var nodeflyAppDetails = [ appName ]; 
+
+	var appfog = process.env.VMC_APP_INSTANCE ? JSON.parse(process.env.VMC_APP_INSTANCE) : undefined;
+
+	if (appfog) {
+		nodeflyAppDetails.push(appfog.name, appfog.instance_index);
+	}
+
+	require('nodefly').profile(nodeflyProfile, nodeflyAppDetails);
+	console.log('using nodefly.');
+} catch (e) {
+	console.log(e);
+	console.warn('Could not start nodefly.');
+}
+
 var express = require('express');
 var io      = require('socket.io');
 var Tome    = require('tomes').Tome;

@@ -60,7 +60,7 @@ function CssView(map, ref) {
 
 inherits(CssView, EventEmitter);
 
-CssView.prototype.add = function (cat) {
+CssView.prototype.addCat = function (cat) {
 	var myCatainer = new Catainer(cat);
 
 	var element = myCatainer.rootElement;
