@@ -18,7 +18,8 @@
         "component-builder": "*",
         "component": "*",
         "nodefly": "stable",
-	"newrelic": "*"
+        "analytics-node": "*",
+        "newrelic": "*"
     },
     "license": {
         "type": "MIT",

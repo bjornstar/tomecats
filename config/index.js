@@ -19,35 +19,14 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var Builder = require('component-builder');
-var fs      = require('fs');
-var write   = fs.writeFileSync;
-var mkdir   = fs.mkdirSync;
+var appConfig;
 
-var appConfig = require('../config');
+try {
+	appConfig = require('./config.json');
+} catch (e) {
+	appConfig = {};
+	console.log(e);
+	console.warn('Could not find config.json');
+}
 
-var built = false;
-
-module.exports = function(req, res, next) {
-	if (built) {
-		return next();
-	}
-	
-	var builder = new Builder('.');
-	builder.copyAssetsTo('public');
-	builder.addLookup('node_modules');
-
-	builder.on('config', function () {
-		builder.append('var config = ' + JSON.stringify(appConfig) + ';');
-	});
-
-	builder.build(function (err, res) {
-		if (err) return next(err);
-		if (!fs.existsSync('public')) {
-			mkdir('public');
-		}
-		write('public/tomecats.js', res.require + res.js);
-		built = false;
-		next();
-	});
-};
+module.exports = appConfig;

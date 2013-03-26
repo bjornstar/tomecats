@@ -26,17 +26,8 @@
 //  \/   \___/|_| |_| |_|\___\____/\__,_|\__|___/
 //
 
-var fs = require('fs');
-
-var appName = JSON.parse(fs.readFileSync('package.json').toString()).name;
-var appConfig = {};
-
-try {
-	appConfig = JSON.parse(fs.readFileSync('config.json').toString());
-} catch (e) {
-	console.log(e);
-	console.warn('Could not find config.json');
-}
+var appName = require('./package.json').name;
+var appConfig = require('./config');
 
 try {
 	process.env.NEW_RELIC_APP_NAME = appName;
@@ -51,9 +42,7 @@ try {
 
 try {
 	var nodeflyProfile = appConfig.nodefly;
-
 	var nodeflyAppDetails = [ appName ]; 
-
 	var appfog = process.env.VMC_APP_INSTANCE ? JSON.parse(process.env.VMC_APP_INSTANCE) : undefined;
 
 	if (appfog) {
@@ -67,10 +56,11 @@ try {
 	console.warn('Could not start nodefly.');
 }
 
-var express = require('express');
-var io      = require('socket.io');
-var Tome    = require('tomes').Tome;
-var build   = require('./build');
+var express   = require('express');
+var io        = require('socket.io');
+var Tome      = require('tomes').Tome;
+var build     = require('./build');
+var analytics = require('./analytics');
 
 // Heroku uses PORT
 // AppFog uses VCAP_APP_PORT
@@ -119,6 +109,8 @@ function handleSocketDisconnect() {
 	if (cats.hasOwnProperty(name)) {
 		cats.del(name);
 	}
+
+	analytics.track({ userId: this.id, event: 'disconnected' });
 }
 
 function mergeDiff(diff) {
@@ -236,6 +228,8 @@ function handleLogin(name, catType, propType, pos) {
 
 	// And tell the client who is logging in what their cat's name is.
 	this.emit('loggedIn', name);
+
+	analytics.identify({ userId: this.id, traits: { name: name } });
 }
 
 function clientConnect(socket) {
@@ -257,6 +251,8 @@ function clientConnect(socket) {
 
 	// On login, the client is trying to login.
 	socket.on('login', handleLogin);
+
+	analytics.track({ userId: socket.id, event: 'connected' });
 }
 
 function isNumber (o) {

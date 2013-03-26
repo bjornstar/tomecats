@@ -19,35 +19,30 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var Builder = require('component-builder');
-var fs      = require('fs');
-var write   = fs.writeFileSync;
-var mkdir   = fs.mkdirSync;
-
 var appConfig = require('../config');
 
-var built = false;
+var segmentio = require('analytics-node');
 
-module.exports = function(req, res, next) {
-	if (built) {
-		return next();
+var initialized;
+
+if (appConfig.segmentio) {
+	segmentio.init({secret: appConfig.segmentio});
+	initialized = true;
+	console.log('using segmentio.io');
+}
+
+exports.identify = function () {
+	if (!initialized) {
+		return;
 	}
-	
-	var builder = new Builder('.');
-	builder.copyAssetsTo('public');
-	builder.addLookup('node_modules');
 
-	builder.on('config', function () {
-		builder.append('var config = ' + JSON.stringify(appConfig) + ';');
-	});
+	segmentio.identify.apply(null, arguments);
+};
 
-	builder.build(function (err, res) {
-		if (err) return next(err);
-		if (!fs.existsSync('public')) {
-			mkdir('public');
-		}
-		write('public/tomecats.js', res.require + res.js);
-		built = false;
-		next();
-	});
+exports.track = function () {
+	if (!initialized) {
+		return;
+	}
+
+	segmentio.track.apply(null, arguments);
 };
