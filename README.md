@@ -3,6 +3,8 @@ tomecats
 
 I heard you like cats.
 
+Check out a demo at http://tomecats.bjornstar.com
+
 #How to run
 
 ```bash
